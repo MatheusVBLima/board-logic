@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { SPECS } from '@/lib/circuit';
 import { BASICS, GROUPS, LESSONS, type Lesson } from '@/lib/learn';
 import { PartIcon } from '@/components/PartIcon';
+import { LearnToc } from '@/components/LearnToc';
 import { Button } from '@/components/ui/button';
 
 export const metadata: Metadata = {
@@ -49,20 +50,10 @@ export default function LearnPage() {
       </header>
 
       <div className="mx-auto flex max-w-6xl gap-10 px-4 py-8 sm:px-6">
-        <nav aria-label="Conteúdo" className="sticky top-20 hidden h-fit w-56 shrink-0 flex-col gap-4 text-[12.5px] lg:flex">
-          <div>
-            <div className="mb-1.5 text-[10.5px] tracking-[0.14em] uppercase" style={{ color: 'var(--line)' }}>Fundamentos</div>
-            {BASICS.map(b => <a key={b.id} href={`#${b.id}`} className="block py-0.5 text-ink hover:text-ink-hi">{b.title}</a>)}
-          </div>
-          {GROUPS.map(g => (
-            <div key={g}>
-              <div className="mb-1.5 text-[10.5px] tracking-[0.14em] uppercase" style={{ color: 'var(--line)' }}>{g}</div>
-              {LESSONS.filter(l => l.group === g).map(l => (
-                <a key={l.kind} href={`#${l.kind}`} className="block py-0.5 text-ink hover:text-ink-hi">{SPECS[l.kind].name}</a>
-              ))}
-            </div>
-          ))}
-        </nav>
+        <LearnToc groups={[
+          { title: 'Fundamentos', items: BASICS.map(b => ({ id: b.id, label: b.title })) },
+          ...GROUPS.map(g => ({ title: g, items: LESSONS.filter(l => l.group === g).map(l => ({ id: l.kind, label: SPECS[l.kind].name })) })),
+        ]} />
 
         <main className="min-w-0 flex-1 pb-24">
           <h1 className="text-2xl tracking-[0.06em] text-ink-hi">Guia de lógica digital</h1>
