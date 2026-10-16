@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
-  BookOpen, Eraser, GraduationCap, Grid3x3, Link2, Maximize, Pause, Play, Redo2, Trash2, Undo2, ZoomIn, ZoomOut,
+  BookOpen, Eraser, Palette, GraduationCap, Grid3x3, Link2, Maximize, Pause, Play, Redo2, Trash2, Undo2, ZoomIn, ZoomOut,
 } from 'lucide-react';
 import {
-  BOARD_SIZES, CLOCK_HZ, GLOWS, LED_COLORS, PALETTE, SPECS,
+  BOARD_SIZES, CLOCK_HZ, DEFAULT_GLOW, LED_COLORS, PALETTE, SPECS,
   boardSize, boundsOf, clampPos, decodeCircuit, encodeCircuit, isCircuit, minBoard, newComp, overlaps, pinPos, routeWire, uid,
   type Circuit, type Comp, type Kind, type Wire,
 } from '@/lib/circuit';
@@ -84,7 +84,7 @@ export default function Simulator() {
 
   const [sel, setSel] = useState<Sel>(null);
   const [iso, setIso] = useState(false);
-  const [glow, setGlow] = useState<string>(GLOWS[0].id);
+  const [glow, setGlow] = useState<string>(DEFAULT_GLOW);
   const [learnOpen, setLearnOpen] = useState(false);
   const [partsOpen, setPartsOpen] = useState(false);   // mobile parts drawer
   const swipeY = useRef<number | null>(null);
@@ -165,7 +165,7 @@ export default function Simulator() {
     }
     try {
       const g = localStorage.getItem(STORE_KEY + ':glow');
-      if (g && GLOWS.some(x => x.id === g)) setGlow(g);
+      if (g && /^#[0-9a-f]{6}$/i.test(g)) setGlow(g);
     } catch { /* ignore */ }
     if (start) { start = fitBoard(start); setCircRaw(start); }
     loaded.current = true;
@@ -190,10 +190,9 @@ export default function Simulator() {
   }, [circ]);
 
   useEffect(() => {
-    const g = GLOWS.find(x => x.id === glow) ?? GLOWS[0];
-    document.documentElement.style.setProperty('--glow', g.c);
-    document.documentElement.style.setProperty('--glow-hi', g.hi);
-    try { localStorage.setItem(STORE_KEY + ':glow', g.id); } catch { /* ignore */ }
+    document.documentElement.style.setProperty('--glow', glow);
+    document.documentElement.style.setProperty('--glow-hi', `color-mix(in srgb, ${glow} 55%, white)`);
+    try { localStorage.setItem(STORE_KEY + ':glow', glow); } catch { /* ignore */ }
   }, [glow]);
 
   // latest values for window listeners
@@ -540,7 +539,6 @@ export default function Simulator() {
   const ledComps = circ.comps.filter(c => c.kind === 'led');
   const lit = ledComps.filter(c => sim.inp[c.id]?.[0]).length;
   const hexes = circ.comps.filter(c => c.kind === 'seg7').map(c => hexValue(sim.inp[c.id] ?? [0, 0, 0, 0]).toString(16).toUpperCase());
-  const anyLit = lit > 0 || circ.comps.some(c => c.kind === 'seg7' && sim.inp[c.id]?.some(Boolean));
   const readout = [
     switches.length ? switches.slice(0, 8).map(c => `${tagOf(c)?.toLowerCase()}${c.on ? 1 : 0}`).join(' ') : null,
     ledComps.length ? `leds ${lit}/${ledComps.length}` : null,
@@ -625,8 +623,8 @@ export default function Simulator() {
               </DropdownMenu>
               <ToggleGroup type="single" size="sm" variant="outline" value={iso ? 'iso' : '2d'}
                 onValueChange={v => { if (!v) return; const nIso = v === 'iso'; setIso(nIso); requestAnimationFrame(() => fitTo(circRef.current, makeProj(nIso, K), sizeRef.current, true)); }}>
-                <ToggleGroupItem value="iso" className="px-2.5 text-xs">ISO</ToggleGroupItem>
                 <ToggleGroupItem value="2d" className="px-2.5 text-xs">2D</ToggleGroupItem>
+                <ToggleGroupItem value="iso" className="px-2.5 text-xs">ISO</ToggleGroupItem>
               </ToggleGroup>
               <Separator orientation="vertical" className="mx-1 !h-5" />
               <Tip label="Desfazer (ctrl+z)"><Button variant="ghost" size="icon-sm" onClick={undo} disabled={!past.current.length}><Undo2 /></Button></Tip>
@@ -635,13 +633,12 @@ export default function Simulator() {
               <Tip label="Apagar seleção (delete)"><Button variant="ghost" size="icon-sm" onClick={removeSel} disabled={!sel}><Trash2 /></Button></Tip>
               <Tip label="Limpar board"><Button variant="ghost" size="icon-sm" onClick={clearAll} disabled={!circ.comps.length}><Eraser /></Button></Tip>
               <Tip label="Copiar link do circuito"><Button variant="ghost" size="icon-sm" onClick={share}><Link2 /></Button></Tip>
-              <Separator orientation="vertical" className="mx-1 !h-5 max-md:hidden" />
               <GlowPicker glow={glow} setGlow={setGlow} className="max-md:hidden" />
             </div>
           </header>
 
           {/* the board */}
-          <div ref={stageRef} data-stage className={cn('stage-glow relative min-h-0 flex-1 overflow-hidden', anyLit && 'on')}>
+          <div ref={stageRef} data-stage className="relative min-h-0 flex-1 overflow-hidden">
             <svg ref={svgRef} className="board-svg absolute inset-0 h-full w-full outline-none" viewBox={viewBox}
               role="img" tabIndex={0}
               aria-label="Board lógica: arraste peças do menu para o board, puxe fios de um pino de saída para um de entrada e clique nas chaves para ligar."
@@ -651,22 +648,6 @@ export default function Simulator() {
                 <pattern id="holes" width={0.5} height={0.5} patternUnits="userSpaceOnUse" patternTransform="translate(-0.25 -0.25)">
                   <rect className="hole" x={0.19} y={0.19} width={0.12} height={0.12} />
                 </pattern>
-                <filter id="glow" filterUnits="userSpaceOnUse" x="-20000" y="-20000" width="60000" height="60000">
-                  <feGaussianBlur stdDeviation="4" result="b" />
-                  <feMerge><feMergeNode in="b" /><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-                </filter>
-                <filter id="soft" filterUnits="userSpaceOnUse" x="-20000" y="-20000" width="60000" height="60000">
-                  <feGaussianBlur stdDeviation="2.2" result="b" />
-                  <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-                </filter>
-                {/* the same glows for shapes drawn inside a board-plane (cell unit) transform */}
-                <filter id="soft-p" filterUnits="userSpaceOnUse" x="-1000" y="-1000" width="3000" height="3000">
-                  <feGaussianBlur stdDeviation="0.1" result="b" />
-                  <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-                </filter>
-                <filter id="bloom-p" filterUnits="userSpaceOnUse" x="-1000" y="-1000" width="3000" height="3000">
-                  <feGaussianBlur stdDeviation="0.45" />
-                </filter>
               </defs>
 
               {/* plate: the base the breadboard is screwed to */}
@@ -863,17 +844,15 @@ export default function Simulator() {
 
 function GlowPicker({ glow, setGlow, className }: { glow: string; setGlow: (g: string) => void; className?: string }) {
   return (
-    <div role="radiogroup" aria-label="Cor do brilho" className={cn('flex items-center gap-0.5 rounded-full border border-edge p-0.5', className)}>
-      {GLOWS.map(g => (
-        <button key={g.id} type="button" role="radio" aria-checked={glow === g.id} aria-label={g.name} title={g.name}
-          onClick={() => setGlow(g.id)}
-          className="grid size-7 place-items-center rounded-full border border-transparent md:size-6"
-          style={glow === g.id ? { borderColor: 'var(--line)' } : undefined}>
-          <i className="block size-2.5 rounded-full border transition-transform hover:scale-110"
-            style={{ background: g.c, borderColor: 'var(--line)', boxShadow: glow === g.id ? `0 0 10px 1px ${g.c}` : undefined }} />
-        </button>
-      ))}
-    </div>
+    <Tip label="Cor do brilho">
+      <Button variant="ghost" size="icon-sm" asChild className={className}>
+        <label className="relative cursor-pointer">
+          <Palette style={{ color: 'var(--glow)' }} />
+          <input type="color" className="absolute inset-0 cursor-pointer opacity-0" aria-label="Cor do brilho"
+            value={glow} onChange={e => setGlow(e.target.value)} />
+        </label>
+      </Button>
+    </Tip>
   );
 }
 
