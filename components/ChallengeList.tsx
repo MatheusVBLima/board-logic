@@ -36,7 +36,7 @@ export function ChallengeList() {
                   <p className="mt-2 flex-1 text-[12.5px] leading-relaxed text-ink">{txt.goal}</p>
                   <div className="mt-3 flex items-center justify-between gap-2">
                     <span className="text-[11px] text-ink">
-                      {c.inputs.length} × {switchLabel(0)}…{switchLabel(c.inputs.length - 1)} → {c.outputs.length} LED
+                      {c.inputs.length > 1 ? `${switchLabel(0)}…${switchLabel(c.inputs.length - 1)}` : switchLabel(0)} → {c.outputs.length} LED
                       {c.allowed && ` · ${c.allowed.map(k => t.parts[k]).join(', ')}`}
                     </span>
                     <Button asChild size="sm" variant={done ? 'outline' : 'default'} className={done ? 'border-edge text-ink-hi' : undefined}>

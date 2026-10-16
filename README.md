@@ -32,9 +32,21 @@ Next.js 16 (App Router), React 19, Tailwind CSS 4 e shadcn/ui. A simulação fic
 (propagação iterativa até estabilizar, o que permite latches e realimentação) e o desenho isométrico
 em `lib/iso.ts` + `components/Part.tsx`.
 
+## Idiomas, contas e projetos
+
+- O site é em inglês por padrão (`/en/...`) e em português em `/pt/...`. Os textos ficam em `lib/i18n/en.ts` e
+  `lib/i18n/pt.ts`, e o guia em `lib/learn/en.ts` e `lib/learn/pt.ts`. Quem escolhe um idioma fica nele (cookie).
+- Rotas: `/[lang]` landing, `/[lang]/board` simulador, `/[lang]/learn` guia, `/[lang]/challenges` desafios,
+  `/[lang]/login` e `/[lang]/projects`.
+- Contas e projetos salvos usam Supabase (até 10 projetos por usuário). Aplique
+  `supabase/migrations/20261016000000_projects.sql` e defina `NEXT_PUBLIC_SUPABASE_URL` e
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Sem essas variáveis o site funciona normalmente, só sem login.
+- No Supabase (Authentication > URL Configuration) use o domínio do site como Site URL e libere
+  `https://<domínio>/auth/callback` nas Redirect URLs.
+
 ## Deploy na Vercel
 
 Importe o repositório em https://vercel.com/new. A Vercel detecta Next.js e o `bun.lock` automaticamente;
-não há variáveis de ambiente.
+defina as duas variáveis do Supabase acima.
 
 Visual inspirado em [iso-glow](https://isoglow.dev) e [iso-figure](https://github.com/MrBongoC/ai-iso-skill).
