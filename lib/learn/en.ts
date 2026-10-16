@@ -2,7 +2,8 @@
 // the complete guide on /en/learn.
 
 import { PALETTE } from '../circuit.ts';
-import type { Basic, Lesson, LearnContent } from './types.ts';
+import BASICS from './basics/en.ts';
+import type { Lesson, LearnContent } from './types.ts';
 
 const t2 = (f: (a: number, b: number) => number) => ({
   head: ['A', 'B', 'out'],
@@ -410,51 +411,6 @@ const LESSONS: Lesson[] = [
       { title: 'In the real world', body: [
         'Common displays do not decode by themselves: a decoder chip such as the 74·47 (for BCD) takes the 4 bits and lights the right segments.',
       ] },
-    ],
-  },
-];
-
-const BASICS: Basic[] = [
-  {
-    id: 'sinais', title: 'Digital signals: 0 and 1',
-    body: [
-      'Digital circuits work with only two values: 0 (off, false, low level) and 1 (on, true, high level). Each of these values is a bit.',
-      'On the board, a lit wire is at 1 and a dark wire is at 0. When a signal changes, a pulse of light runs along the wire showing the path.',
-    ],
-  },
-  {
-    id: 'fios', title: 'Inputs, outputs and wires',
-    body: [
-      'Every part has its inputs on the left and its outputs on the right. A wire always connects an output to an input: drag from one pin to the other, or on a phone tap one pin and then the other.',
-      'An output can feed as many inputs as you want, but each input takes a single wire. If you connect a new wire to a busy input, it replaces the old one. An input with no wire reads 0.',
-    ],
-  },
-  {
-    id: 'tabela', title: 'Truth table',
-    body: [
-      'A truth table lists every input combination and the output for each one. A 2-input gate has 4 rows (2²), and a 3-input one has 8 (2³).',
-      'To test on the board, put two switches on the inputs and an LED on the output, and step through the four combinations pressing A and B. Or open the truth table panel and the board fills it in for you.',
-    ],
-  },
-  {
-    id: 'boole', title: 'Boolean algebra',
-    body: [
-      'In 1854 George Boole created an algebra with only true and false. In it, AND is written as multiplication (A·B), OR as a sum (A+B) and NOT with a bar on top (Ā).',
-      'De Morgan\'s laws show how to swap one gate for another: ‾(A·B) = Ā + B̄ and ‾(A+B) = Ā · B̄. That is why NAND and NOR can build every other gate.',
-    ],
-  },
-  {
-    id: 'combinacional', title: 'Combinational and sequential',
-    body: [
-      'Combinational circuits, made only of gates, answer right away: the output depends only on the current inputs. The half adder is an example.',
-      'Sequential circuits have memory (latches and flip-flops), so the output also depends on what happened before. The counter and the SR latch are examples. They usually march to the beat of a clock.',
-    ],
-  },
-  {
-    id: 'somador', title: 'Example: half adder',
-    body: [
-      'Adding two bits A and B gives a 2-bit result: the sum (S) and the carry (C). 0+0 = 00, 0+1 = 01, 1+0 = 01 and 1+1 = 10.',
-      'Looking at the table, S is exactly an XOR and C is exactly an AND. Chaining several of these blocks (full adders), a computer adds numbers of any size. Load the "Half adder" example to try it.',
     ],
   },
 ];

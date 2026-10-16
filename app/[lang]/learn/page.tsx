@@ -9,7 +9,7 @@ import { PartIcon } from '@/components/PartIcon';
 import { LearnToc } from '@/components/LearnToc';
 import { SiteHeader } from '@/components/SiteHeader';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/optics/card';
+import { Card, CardContent, CardDescription, CardFooter, CardTitle } from '@/components/optics/card';
 
 export async function generateMetadata({ params }: PageProps<'/[lang]/learn'>): Promise<Metadata> {
   const { t } = await getDict(params);
@@ -20,7 +20,7 @@ function Table({ t }: { t: NonNullable<Lesson['table']> }) {
   return (
     <table className="w-full max-w-sm border-collapse text-center text-[13px]">
       <thead>
-        <tr>{t.head.map(h => <th key={h} className="border-b border-edge px-2 pb-1.5 font-normal text-ink">{h}</th>)}</tr>
+        <tr>{t.head.map(h => <th key={h} scope="col" className="border-b border-edge px-2 pb-1.5 font-normal text-ink">{h}</th>)}</tr>
       </thead>
       <tbody>
         {t.rows.map((r, i) => (
@@ -58,16 +58,45 @@ export default async function LearnPage({ params }: PageProps<'/[lang]/learn'>) 
             <Link href={`/${locale}/challenges`}><Trophy style={{ color: 'var(--glow)' }} />{t.learn.challengesCta}</Link>
           </Button>
 
-          <section className="mt-10">
-            <h2 className="mb-4 text-[11px] tracking-[0.16em] uppercase" style={{ color: 'var(--line)' }}>{t.learn.basics}</h2>
-            <div className="grid gap-4 md:grid-cols-2">
+          <section className="mt-10" aria-labelledby="fundamentals-title">
+            <h2 id="fundamentals-title" className="mb-5 text-[11px] tracking-[0.16em] text-ink uppercase">{t.learn.basics}</h2>
+            <nav aria-label={t.learn.basics} className="mb-8 grid gap-2 sm:grid-cols-2 lg:hidden">
+              {L.basics.map(b => <a key={b.id} href={`#${b.id}`} className="rounded-md border border-edge px-3 py-2 text-xs text-ink hover:border-ink hover:text-ink-hi">{b.title}</a>)}
+            </nav>
+            <div className="flex flex-col gap-12">
               {L.basics.map(b => (
-                <Card key={b.id} id={b.id} decorations className="scroll-mt-20 py-5">
-                  <CardHeader className="px-5"><CardTitle className="text-[15px] font-normal text-ink-hi"><h3>{b.title}</h3></CardTitle></CardHeader>
-                  <CardContent className="px-5">
-                    {b.body.map((p, i) => <p key={i} className="mt-2.5 first:mt-0 text-[13px] leading-relaxed text-ink">{p}</p>)}
-                  </CardContent>
-                </Card>
+                <section key={b.id} id={b.id} aria-labelledby={`${b.id}-title`} data-fundamental className="scroll-mt-24 border-t border-edge pt-8">
+                  <h3 id={`${b.id}-title`} className="text-xl leading-snug tracking-[-0.03em] text-ink-hi sm:text-2xl">{b.title}</h3>
+                  <div className="mt-5 max-w-[70ch] space-y-3 text-[14px] leading-7 text-ink">
+                    {b.body.map((p, i) => <p key={i}>{p}</p>)}
+                  </div>
+                  <div className="mt-8 space-y-8">
+                    {b.sections.map(section => (
+                      <div key={section.title}>
+                        <h4 className="text-[15px] leading-relaxed text-ink-hi">{section.title}</h4>
+                        <div className="mt-3 max-w-[70ch] space-y-3 text-[13px] leading-7 text-ink">
+                          {section.body.map((p, i) => <p key={i}>{p}</p>)}
+                        </div>
+                        {section.expression && <p className="mt-4 overflow-x-auto rounded-lg border border-edge bg-panel px-4 py-3 text-sm" style={{ color: 'var(--glow-hi)' }}>{section.expression}</p>}
+                        {section.table && <div className="mt-5 overflow-x-auto rounded-lg border border-edge bg-panel p-4"><Table t={section.table} /></div>}
+                      </div>
+                    ))}
+                  </div>
+                  <aside className="mt-8 rounded-xl border border-edge bg-panel p-5 sm:p-6" aria-labelledby={`${b.id}-practice`}>
+                    <p className="flex items-center gap-2 text-xs text-glow"><FlaskConical className="size-4" />{t.learn.practice}</p>
+                    <h4 id={`${b.id}-practice`} className="mt-3 text-[15px] leading-relaxed text-ink-hi">{b.practice.title}</h4>
+                    <ol className="mt-4 list-decimal space-y-3 pl-5 text-[13px] leading-relaxed text-ink marker:text-glow">
+                      {b.practice.steps.map(step => <li key={step} className="pl-1">{step}</li>)}
+                    </ol>
+                    <Button asChild variant="outline" size="sm" className="mt-5 border-edge bg-background text-ink-hi">
+                      <a href={`${board}#c=${encodeCircuit(demoFor(b.practice.demo))}`}><FlaskConical />{t.learn.tryIt}</a>
+                    </Button>
+                    <details className="mt-5 border-t border-edge pt-4 text-[13px] leading-relaxed">
+                      <summary className="cursor-pointer text-ink-hi">{t.learn.showExplanation}</summary>
+                      <p className="mt-3 text-ink">{b.practice.explanation}</p>
+                    </details>
+                  </aside>
+                </section>
               ))}
             </div>
           </section>

@@ -26,7 +26,7 @@ import { ChallengeCard } from '@/components/ChallengeCard';
 import { LearnPanel } from '@/components/LearnPanel';
 import { SaveDialog } from '@/components/SaveDialog';
 import { TruthTablePanel } from '@/components/TruthTablePanel';
-import { PartIcon } from '@/components/PartIcon';
+import { PartPalette } from '@/components/PartPalette';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -34,7 +34,6 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
-import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { cn } from '@/lib/utils';
 import { Logo } from '@/components/Logo';
 
@@ -107,7 +106,6 @@ export default function Simulator() {
   const [glow, setGlow] = useState<string>(DEFAULT_GLOW);
   const [learnOpen, setLearnOpen] = useState(false);
   const [partsOpen, setPartsOpen] = useState(false);   // mobile parts drawer
-  const swipeY = useRef<number | null>(null);
   const [paused, setPaused] = useState(false);
   const [pressed, setPressed] = useState<Set<string>>(() => new Set());
   const [drag, setDragState] = useState<Drag | null>(null);
@@ -757,7 +755,7 @@ export default function Simulator() {
             </div>
           </header>
 
-          <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          <div data-challenge-layout className="flex min-h-0 flex-1 flex-col lg:flex-row">
           {challenge && <ChallengeCard key={challenge.id} challenge={challenge} circ={circ} onReset={() => { const c = starterCircuit(challenge); mem.current = {}; commit(c); requestAnimationFrame(() => fitTo(c, pr, sizeRef.current, true)); }} />}
           {/* the board */}
           <div ref={stageRef} data-stage className="relative min-h-0 flex-1 overflow-hidden">
@@ -911,56 +909,14 @@ export default function Simulator() {
           </footer>
         </figure>
 
-        {/* element dock */}
-        <nav data-dock aria-label={t.board.partsTitle}
-          className={cn('hidden shrink-0 gap-2 md:flex overflow-x-auto rounded-[18px] border border-edge bg-panel p-2 transition-colors',
-            movingToDock && 'border-destructive bg-destructive/10')}
-          style={{ touchAction: 'pan-x' }}>
-          {palette.map(k => (
-            <button key={k} type="button" onPointerDown={e => startNew(k, e)}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); addAt(k, null); } }}
-              className="group flex w-[100px] shrink-0 cursor-grab flex-col items-center gap-1 rounded-xl border border-transparent px-1 pt-1 pb-1.5 text-[10.5px] tracking-[0.08em] text-ink uppercase transition-colors select-none hover:border-edge hover:bg-accent hover:text-ink-hi active:cursor-grabbing"
-              title={t.board.dragToBoard(t.parts[k])}>
-              <PartIcon kind={k} />
-              <span className="text-center leading-4 whitespace-normal">{t.parts[k]}</span>
-            </button>
-          ))}
-        </nav>
-
-        {/* mobile: the dock is a drawer pulled up from this handle */}
-        <button type="button" data-dock aria-label={t.board.openParts}
-          className={cn('flex shrink-0 flex-col items-center gap-1.5 rounded-[18px] border border-edge bg-panel px-4 pt-2 pb-2.5 text-[11px] tracking-[0.12em] text-ink uppercase transition-colors md:hidden',
-            movingToDock && 'border-destructive bg-destructive/10 text-ink-hi')}
-          style={{ touchAction: 'none' }}
-          onPointerDown={e => { swipeY.current = e.clientY; }}
-          onPointerMove={e => { if (swipeY.current !== null && swipeY.current - e.clientY > 12) { swipeY.current = null; setPartsOpen(true); } }}
-          onPointerUp={() => { if (swipeY.current !== null) setPartsOpen(true); swipeY.current = null; }}
-          onPointerCancel={() => { swipeY.current = null; }}>
-          <span className="h-1.5 w-12 rounded-full bg-muted" style={{ background: 'var(--line)' }} />
-          <span>{movingToDock ? t.board.dropToRemove : t.board.partsPullUp}</span>
-        </button>
-        <Drawer open={partsOpen} onOpenChange={setPartsOpen}>
-          <DrawerContent className="border-edge bg-panel font-mono">
-            <DrawerHeader className="pb-1">
-              <DrawerTitle className="text-[13px] font-normal tracking-[0.14em] text-ink-hi uppercase">{t.board.partsTitle}</DrawerTitle>
-              <DrawerDescription className="text-xs text-ink">{t.board.partsDesc}</DrawerDescription>
-            </DrawerHeader>
-            <div className="grid grid-cols-4 gap-1 overflow-y-auto px-3 pb-2">
-              {palette.map(k => (
-                <button key={k} type="button" data-vaul-no-drag onPointerDown={e => startNew(k, e)}
-                  className="flex flex-col items-center gap-1 rounded-xl border border-transparent px-0.5 pt-1 pb-1.5 text-[10px] tracking-[0.06em] text-ink uppercase select-none active:border-edge active:bg-accent"
-                  style={{ touchAction: 'none' }}>
-                  <PartIcon kind={k} className="h-[44px] w-[70px]" />
-                  <span className="text-center leading-4 whitespace-normal">{t.parts[k]}</span>
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center justify-between gap-3 border-t border-edge px-4 pt-3 pb-5 text-[11px] tracking-[0.12em] text-ink uppercase">
-              <span>{t.board.glow}</span>
-              <GlowPicker glow={glow} setGlow={setGlow} label={t.board.glow} />
-            </div>
-          </DrawerContent>
-        </Drawer>
+        <PartPalette kinds={palette} restricted={!!challenge?.allowed}
+          mobileOpen={partsOpen} onMobileOpenChange={setPartsOpen}
+          onStartDrag={startNew} onAdd={kind => addAt(kind, null)} removing={!!movingToDock}>
+          <div className="flex shrink-0 items-center justify-between gap-3 border-t border-edge px-4 pt-3 pb-[max(16px,env(safe-area-inset-bottom))] text-[11px] text-ink">
+            <span>{t.board.glow}</span>
+            <GlowPicker glow={glow} setGlow={setGlow} label={t.board.glow} />
+          </div>
+        </PartPalette>
         </div>
         <SaveDialog open={saveOpen} onOpenChange={setSaveOpen} used={used} onSubmit={createNamed} />
       </main>

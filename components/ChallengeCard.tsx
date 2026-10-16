@@ -44,44 +44,46 @@ export function ChallengeCard({ challenge, circ, onReset }: { challenge: Challen
     : t.challenge.oscillates;
 
   return (
-    <Card decorations role="region" aria-label={t.challenge.label} data-challenge-panel data-open={open}
-      className="relative mx-3 mt-3 flex max-h-[min(60dvh,calc(100%-140px))] min-h-0 shrink-0 flex-col gap-0 border border-edge bg-background py-0 ring-0 lg:my-3 lg:mr-0 lg:max-h-none lg:w-[340px]">
-      <div className="relative shrink-0 overflow-hidden border-b border-edge px-5 py-4">
+    <Card decorations role="region" aria-labelledby={`${contentId}-title`} data-challenge-panel data-open={open} className="challenge-brief gap-0 py-0 ring-0">
+      <div className="challenge-header relative shrink-0 overflow-hidden px-5 py-4">
         <CircuitMotif className="pointer-events-none absolute -top-5 -right-10 h-40 w-44 text-ink/25 opacity-60" />
         <div className="relative flex items-center justify-between gap-3">
           <p className="flex items-center gap-2 text-[10px] tracking-[0.13em] text-ink uppercase">
             <Trophy className="size-3.5 text-glow" />{t.challenge.label} {String(index + 1).padStart(2, '0')}
             <span className="text-ink/40">/</span>{String(CHALLENGES.length).padStart(2, '0')}
           </p>
-          <Button size="icon-sm" variant="ghost" className="-mr-2 text-ink" aria-expanded={open} aria-controls={contentId}
+          <Button type="button" size="icon-sm" variant="ghost" className="challenge-toggle -mr-2 text-ink" aria-expanded={open} aria-controls={contentId}
             aria-label={open ? t.challenge.collapse : t.challenge.expand} onClick={() => setOpen(o => !o)}>
             {open ? <ChevronUp /> : <ChevronDown />}
           </Button>
         </div>
-        <h2 className="relative mt-1 max-w-[245px] text-[19px] leading-snug tracking-[-0.03em] text-ink-hi">{text.title}</h2>
+        <h2 id={`${contentId}-title`} className="relative mt-1 max-w-[245px] text-[19px] leading-snug tracking-[-0.03em] text-ink-hi">{text.title}</h2>
         {open && <p className="relative mt-2 text-[10px] tracking-[0.12em] text-glow uppercase">{t.challengesPage.levels[challenge.level]}</p>}
       </div>
-      <div id={contentId} hidden={!open} className={cn('min-h-0 flex-1 flex-col', open && 'flex')}>
-        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 text-[12px] leading-relaxed">
-          <h3 className="challenge-caption">{t.challenge.goal}</h3>
-          <p className="mt-2 text-[13px] leading-6 text-ink-hi/90">{text.goal}</p>
-          <dl className="mt-5 grid grid-cols-2 gap-3">
-            <div className="rounded-lg border border-edge bg-panel px-3 py-3">
+      <div id={contentId} hidden={!open} className={cn('min-h-0 flex-col', open ? 'flex' : 'hidden')}>
+        <div ref={scrollRef} className="min-h-0 overflow-y-auto overscroll-contain px-5 pt-4 pb-5 text-[12px] leading-relaxed">
+          <h3 className="challenge-caption mb-3">{t.challenge.goal}</h3>
+          <p className="challenge-goal">{text.goal}</p>
+          <dl className="challenge-connections">
+            <div className="min-w-0">
               <dt className="challenge-caption">{t.challenge.inputs}</dt>
               <dd className="mt-2 flex flex-wrap gap-1.5">{challenge.inputs.map((n, i) => <span key={i} className="challenge-pin">{switchLabel(i) === n ? n : `${switchLabel(i)}=${n}`}</span>)}</dd>
             </div>
-            <div className="rounded-lg border border-edge bg-panel px-3 py-3">
+            <div className="min-w-0 border-l border-edge pl-4">
               <dt className="challenge-caption">{t.challenge.outputs}</dt>
               <dd className="mt-2 flex flex-wrap gap-1.5">{challenge.outputs.map((n, i) => <span key={i} className="challenge-pin">{ledLabel(i)}={n}</span>)}</dd>
             </div>
-            <div className="col-span-2">
+            <div className="col-span-2 border-t border-edge pt-3">
               <dt className="challenge-caption">{t.challenge.allowed}</dt>
               <dd className="mt-2 flex flex-wrap gap-1.5">{challenge.allowed
                 ? challenge.allowed.map(k => <Link key={k} href={`${href('/learn')}#${k}`} className="challenge-pin hover:border-ink hover:text-glow">{t.parts[k]}</Link>)
                 : <span className="text-ink-hi">{t.challenge.anyParts}</span>}</dd>
             </div>
           </dl>
-          <Link href={href('/learn')} className="mt-5 inline-flex items-center gap-2 text-[11px] text-ink hover:text-ink-hi"><BookOpenText className="size-3.5" />{t.learn.fullGuide}<ArrowRight className="size-3" /></Link>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-[11px]">
+            <Link href={href('/learn')} className="inline-flex min-h-8 items-center gap-2 text-ink hover:text-ink-hi"><BookOpenText className="size-3.5" />{t.learn.fullGuide}</Link>
+            <Button size="sm" variant="ghost" className="text-[11px] text-ink hover:text-ink-hi" onClick={() => { setHint(false); scrollRef.current?.scrollTo({ top: 0 }); onReset(); }}><RotateCcw />{t.challenge.reset}</Button>
+          </div>
           <div ref={hintRef} id={hintId} hidden={!hint} className="mt-4 rounded-lg border border-glow/20 bg-glow/5 p-3 text-ink-hi/90">
             <p className="mb-1.5 flex items-center gap-2 text-glow"><Lightbulb className="size-3.5" />{t.challenge.hint}</p><p>{text.hint}</p>
           </div>
@@ -120,12 +122,9 @@ export function ChallengeCard({ challenge, circ, onReset }: { challenge: Challen
             </div>}
           </div>
         </div>
-        <div className="shrink-0 border-t border-edge bg-panel px-4 py-3">
-          <Button className="h-10 w-full text-[12px]" onClick={check}><CheckCircle2 />{t.challenge.check}<ArrowRight className="ml-auto" /></Button>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <Button size="sm" variant="ghost" className="text-[11px] text-ink hover:text-ink-hi" aria-expanded={hint} aria-controls={hintId} onClick={() => setHint(h => !h)}><Lightbulb />{t.challenge.hint}</Button>
-            <Button size="sm" variant="ghost" className="text-[11px] text-ink hover:text-ink-hi" onClick={() => { setHint(false); scrollRef.current?.scrollTo({ top: 0 }); onReset(); }}><RotateCcw />{t.challenge.reset}</Button>
-          </div>
+        <div className="flex shrink-0 items-center gap-3 border-t border-edge px-4 py-4">
+          <Button variant="outline" className="h-10 text-[12px] text-ink-hi" aria-expanded={hint} aria-controls={hintId} onClick={() => setHint(h => !h)}><Lightbulb />{t.challenge.hint}</Button>
+          <Button className="h-10 min-w-0 flex-1 bg-glow text-background hover:bg-glow/90 text-[12px]" onClick={check}><CheckCircle2 />{t.challenge.check}<ArrowRight className="ml-auto" /></Button>
         </div>
       </div>
     </Card>

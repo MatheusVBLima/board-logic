@@ -17,7 +17,18 @@ export interface Lesson {
 }
 
 /** General topics shown before the parts on the guide page. */
-export interface Basic { id: string; title: string; body: string[] }
+export interface Basic {
+  id: string;
+  title: string;
+  body: string[];
+  sections: {
+    title: string;
+    body: string[];
+    expression?: string;
+    table?: { head: string[]; rows: string[][] };
+  }[];
+  practice: { title: string; steps: string[]; explanation: string; demo: Kind };
+}
 
 export interface LearnContent {
   groupNames: Record<Group, string>;

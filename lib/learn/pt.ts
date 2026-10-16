@@ -2,7 +2,8 @@
 // guia completo da página /pt/learn.
 
 import { PALETTE } from '../circuit.ts';
-import type { Basic, Lesson, LearnContent } from './types.ts';
+import BASICS from './basics/pt.ts';
+import type { Lesson, LearnContent } from './types.ts';
 
 const t2 = (f: (a: number, b: number) => number) => ({
   head: ['A', 'B', 'saída'],
@@ -410,51 +411,6 @@ const LESSONS: Lesson[] = [
       { title: 'No mundo real', body: [
         'Displays comuns não decodificam sozinhos: usa-se um chip decodificador como o 74·47 (para BCD), que recebe os 4 bits e acende os segmentos certos.',
       ] },
-    ],
-  },
-];
-
-const BASICS: Basic[] = [
-  {
-    id: 'sinais', title: 'Sinais digitais: 0 e 1',
-    body: [
-      'Circuitos digitais trabalham com só dois valores: 0 (desligado, falso, nível baixo) e 1 (ligado, verdadeiro, nível alto). Cada um desses valores é um bit.',
-      'No board, um fio aceso está em 1 e um fio apagado está em 0. Quando um sinal muda, um pulso de luz corre pelo fio mostrando o caminho.',
-    ],
-  },
-  {
-    id: 'fios', title: 'Entradas, saídas e fios',
-    body: [
-      'Toda peça tem as entradas do lado esquerdo e as saídas do lado direito. Um fio sempre liga uma saída a uma entrada: arraste de um pino até o outro, ou no celular toque num pino e depois no outro.',
-      'Uma saída pode alimentar quantas entradas você quiser, mas cada entrada recebe um único fio. Se você ligar um fio novo numa entrada ocupada, ele substitui o antigo. Uma entrada sem fio vale 0.',
-    ],
-  },
-  {
-    id: 'tabela', title: 'Tabela-verdade',
-    body: [
-      'A tabela-verdade lista todas as combinações de entrada e a saída de cada uma. Uma porta de 2 entradas tem 4 linhas (2²), e uma de 3 entradas tem 8 (2³).',
-      'Para testar no board, ponha duas chaves nas entradas e um LED na saída, e passe pelas quatro combinações apertando A e B. Ou abra o painel da tabela-verdade e o board preenche tudo para você.',
-    ],
-  },
-  {
-    id: 'boole', title: 'Álgebra de Boole',
-    body: [
-      'George Boole criou, em 1854, uma álgebra só com verdadeiro e falso. Nela, AND é escrito como multiplicação (A·B), OR como soma (A+B) e NOT com uma barra em cima (Ā).',
-      'As leis de De Morgan mostram como trocar uma porta por outra: ‾(A·B) = Ā + B̄ e ‾(A+B) = Ā · B̄. Por isso NAND e NOR conseguem montar todas as outras portas.',
-    ],
-  },
-  {
-    id: 'combinacional', title: 'Combinacional e sequencial',
-    body: [
-      'Circuitos combinacionais, feitos só de portas, respondem na hora: a saída depende apenas das entradas atuais. O meio somador é um exemplo.',
-      'Circuitos sequenciais têm memória (latches e flip-flops), então a saída depende também do que aconteceu antes. O contador e o latch SR são exemplos. Normalmente eles andam no ritmo de um clock.',
-    ],
-  },
-  {
-    id: 'somador', title: 'Exemplo: meio somador',
-    body: [
-      'Somar dois bits A e B dá um resultado de 2 bits: a soma (S) e o vai um (C). 0+0 = 00, 0+1 = 01, 1+0 = 01 e 1+1 = 10.',
-      'Olhando a tabela, S é exatamente uma XOR e C é exatamente uma AND. Juntando várias dessas peças (somadores completos), um computador soma números de qualquer tamanho. Carregue o exemplo "Meio somador" para testar.',
     ],
   },
 ];
