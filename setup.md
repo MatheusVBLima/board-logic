@@ -194,7 +194,6 @@ Projetos que só têm a chave legada podem usar `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 no lugar da publishable. Se as duas estiverem definidas, a `ANON_KEY` tem
 prioridade. O arquivo `.env.local` é ignorado pelo Git e não deve ser enviado.
 
-No deploy (Vercel, por exemplo), defina as mesmas variáveis no painel do projeto.
 
 ## 5. Rode o aplicativo
 
@@ -210,3 +209,20 @@ Abra `http://localhost:3000/pt/login`, crie uma conta e confirme o e-mail (se
 
 Se o login não aparecer, confira se `.env.local` está na raiz do projeto e
 reinicie o `bun dev`: as variáveis `NEXT_PUBLIC_` são lidas na inicialização.
+
+## 6. Deploy (opcional)
+
+O aplicativo não depende de um domínio fixo: o login volta para o endereço em que
+foi aberto, e as imagens de compartilhamento usam o domínio do próprio deploy.
+
+1. Importe o seu fork em [vercel.com/new](https://vercel.com/new). A Vercel
+   detecta Next.js e o `bun.lock` sozinha.
+2. Em **Settings > Environment Variables**, defina as mesmas variáveis do
+   `.env.local` e faça um novo deploy.
+3. No Supabase, em **Authentication > URL Configuration**, troque a **Site URL**
+   pelo domínio do seu deploy (por exemplo `https://seu-app.vercel.app`) e
+   adicione `https://seu-app.vercel.app/**` nas **Redirect URLs**, mantendo a de
+   `localhost` se ainda for rodar localmente.
+
+Na Vercel, o domínio de produção é detectado automaticamente. Em outra hospedagem,
+defina `SITE_URL` com o endereço público (veja o `.env.example`).

@@ -6,15 +6,11 @@ import { GlowProvider } from '@/components/GlowProvider';
 import { GLOW_INIT_SCRIPT } from '@/lib/glow';
 import { HTML_LANG, LOCALES } from '@/lib/i18n/config';
 import { getDict } from '@/lib/i18n/server';
+import { SITE_URL } from '@/lib/site';
 
 export function generateStaticParams() {
   return LOCALES.map(lang => ({ lang }));
 }
-
-// Absolute base for share-image URLs; previews point at their own deployment.
-const SITE_URL = process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_BRANCH_URL
-  ? `https://${process.env.VERCEL_BRANCH_URL}`
-  : 'https://board-logic.vercel.app';
 
 export async function generateMetadata({ params }: LayoutProps<'/[lang]'>): Promise<Metadata> {
   const { t, locale } = await getDict(params);

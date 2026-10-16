@@ -53,6 +53,6 @@ em `lib/iso.ts` + `components/Part.tsx`.
 ## Deploy na Vercel
 
 Importe o repositório em https://vercel.com/new. A Vercel detecta Next.js e o `bun.lock` automaticamente;
-defina as duas variáveis do Supabase acima.
+defina as duas variáveis do Supabase acima. O passo a passo para um deploy próprio está na seção 6 do [`setup.md`](setup.md).
 
 Visual inspirado em [iso-glow](https://isoglow.dev) e [iso-figure](https://github.com/MrBongoC/ai-iso-skill).
