@@ -9,12 +9,20 @@ export function generateStaticParams() {
   return LOCALES.map(lang => ({ lang }));
 }
 
+// Absolute base for share-image URLs; previews point at their own deployment.
+const SITE_URL = process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_BRANCH_URL
+  ? `https://${process.env.VERCEL_BRANCH_URL}`
+  : 'https://board-logic.vercel.app';
+
 export async function generateMetadata({ params }: LayoutProps<'/[lang]'>): Promise<Metadata> {
-  const { t } = await getDict(params);
+  const { t, locale } = await getDict(params);
   return {
+    metadataBase: new URL(SITE_URL),
     title: t.meta.title,
     description: t.meta.description,
     alternates: { languages: { en: '/en', 'pt-BR': '/pt' } },
+    openGraph: { type: 'website', siteName: t.brand, title: t.meta.title, description: t.meta.description, locale: locale === 'pt' ? 'pt_BR' : 'en_US' },
+    twitter: { card: 'summary_large_image', title: t.meta.title, description: t.meta.description },
   };
 }
 
