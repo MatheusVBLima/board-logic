@@ -36,6 +36,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Separator } from '@/components/ui/separator';
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { cn } from '@/lib/utils';
+import { Logo } from '@/components/Logo';
 
 const K = 20;
 const STORE_KEY = 'board-logica:v1';
@@ -673,7 +674,7 @@ export default function Simulator() {
           <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 pt-3 sm:px-6 sm:pt-4">
             <div className="flex min-w-0 items-center gap-3 text-[13px] tracking-[0.14em] text-ink-hi uppercase">
               <a href={href('/')} className="flex items-center gap-3">
-                <span className="inline-block size-1.5 rounded-full" style={{ background: 'var(--glow)', boxShadow: '0 0 8px var(--glow)' }} />
+                <Logo />
                 <span className={cn(project && 'max-sm:hidden')}>{t.brand}</span>
               </a>
               {project && (

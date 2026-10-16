@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft, FlaskConical, Trophy } from 'lucide-react';
+import { ArrowRight, FlaskConical, Trophy } from 'lucide-react';
 import { SPECS, encodeCircuit } from '@/lib/circuit';
 import { demoFor } from '@/lib/demos';
 import { getDict } from '@/lib/i18n/server';
@@ -132,7 +132,7 @@ export default async function LearnPage({ params }: PageProps<'/[lang]/learn'>) 
 
           <div className="mt-14 flex justify-center">
             <Button asChild variant="outline" className="border-edge text-ink-hi">
-              <Link href={board}><ArrowLeft />{t.learn.backAndTry}</Link>
+              <Link href={board}>{t.nav.openBoard}<ArrowRight /></Link>
             </Button>
           </div>
         </main>

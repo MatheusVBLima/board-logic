@@ -25,7 +25,6 @@ const pt: Dict = {
     signOut: 'Sair',
     language: 'Idioma',
     account: 'Conta',
-    backToBoard: 'Voltar ao board',
     openBoard: 'Abrir o board',
   },
   parts: {
@@ -168,6 +167,8 @@ const pt: Dict = {
     newPassword: 'Nova senha',
     setPassword: 'Salvar nova senha',
     passwordUpdated: 'Senha atualizada.',
+    figureLabel: 'Board lógica com três chaves, as portas AND, OR, XOR e NAND, seus LEDs e um display',
+    figureHint: 'Clique em A, B ou C para mudar uma chave',
   },
   projects: {
     title: 'Meus projetos',
@@ -190,7 +191,6 @@ const pt: Dict = {
     truthTable: 'Tabela-verdade',
     chip: 'chip',
     tryIt: 'Testar no board',
-    backAndTry: 'Voltar ao board e testar',
     fullGuide: 'Guia completo',
     close: 'Fechar',
     placeOnBoard: 'Colocar no board',
