@@ -1,6 +1,7 @@
 // Textos de ensino em português: um resumo por peça para o painel "Aprender" e o
 // guia completo da página /pt/learn.
 
+import { PALETTE } from '../circuit.ts';
 import type { Basic, Lesson, LearnContent } from './types.ts';
 
 const t2 = (f: (a: number, b: number) => number) => ({
@@ -8,9 +9,149 @@ const t2 = (f: (a: number, b: number) => number) => ({
   rows: [[0, 0], [0, 1], [1, 0], [1, 1]].map(([a, b]) => [a, b, f(a, b)].map(String)),
 });
 
-const GROUP_NAMES = { inputs: 'Entradas', gates: 'Portas lógicas', memory: 'Memória', outputs: 'Saídas' };
+const GROUP_NAMES = { inputs: 'Entradas', gates: 'Portas lógicas', routing: 'Roteamento de sinais', arithmetic: 'Aritmética', memory: 'Memória', outputs: 'Saídas' };
 
 const LESSONS: Lesson[] = [
+  {
+    kind: "buffer", group: "gates",
+    summary: "Copia a entrada sem inverter: 0 continua 0, 1 continua 1.",
+    expr: "Y = A",
+    table: {
+      head: ["A", "Y"],
+      rows: [
+        ["0", "0"],
+        ["1", "1"],
+      ],
+    },
+    guide: [
+      {"title": "O que faz", "body": ["O buffer tem uma entrada e uma saída. Ao contrário da NOT, preserva o valor lógico. No hardware real pode acionar uma carga ou isolar estágios; este simulador ideal representa apenas a lógica, sem tensão, corrente ou atraso de propagação."]},
+      {"title": "Experimente", "body": ["Ligue uma chave em A e um LED em Y. O LED acompanha a chave. Este buffer não é tri-state: não há pino de habilitação nem estado de alta impedância."]},
+    ],
+  },
+  {
+    kind: "and3", group: "gates",
+    summary: "Dá 1 somente quando as três entradas são 1.",
+    expr: "Y = A · B · C",
+    table: {
+      head: ["A", "B", "C", "Y"],
+      rows: [
+        ["0", "0", "0", "0"],
+        ["0", "0", "1", "0"],
+        ["0", "1", "0", "0"],
+        ["0", "1", "1", "0"],
+        ["1", "0", "0", "0"],
+        ["1", "0", "1", "0"],
+        ["1", "1", "0", "0"],
+        ["1", "1", "1", "1"],
+      ],
+    },
+    guide: [
+      {"title": "Três condições ao mesmo tempo", "body": ["A AND de três entradas amplia a AND comum: A, B e C precisam estar em 1. Qualquer 0 força a saída Y a 0. Equivale a duas portas AND de duas entradas em sequência."]},
+      {"title": "Experimente", "body": ["Ligue três chaves em A, B e C e um LED na saída. Pense em uma trava de segurança: energia, porta fechada e permissão precisam estar ativas."]},
+    ],
+  },
+  {
+    kind: "or3", group: "gates",
+    summary: "Dá 1 quando qualquer uma das três entradas é 1.",
+    expr: "Y = A + B + C",
+    table: {
+      head: ["A", "B", "C", "Y"],
+      rows: [
+        ["0", "0", "0", "0"],
+        ["0", "0", "1", "1"],
+        ["0", "1", "0", "1"],
+        ["0", "1", "1", "1"],
+        ["1", "0", "0", "1"],
+        ["1", "0", "1", "1"],
+        ["1", "1", "0", "1"],
+        ["1", "1", "1", "1"],
+      ],
+    },
+    guide: [
+      {"title": "Três possíveis gatilhos", "body": ["A OR de três entradas só dá 0 para 000. Uma, duas ou três entradas ligadas produzem 1. Equivale a duas OR de duas entradas em sequência."]},
+      {"title": "Experimente", "body": ["Ligue três sensores de alarme representados por chaves. Qualquer sensor ativo acende o LED. É uma OR inclusiva, diferente da paridade ímpar."]},
+    ],
+  },
+  {
+    kind: "mux", group: "routing",
+    summary: "Escolhe qual de dois sinais chega à saída.",
+    expr: "Y = A·S̄ + B·S",
+    table: {
+      head: ["A", "B", "S", "Y"],
+      rows: [
+        ["0", "0", "0", "0"],
+        ["0", "0", "1", "0"],
+        ["0", "1", "0", "0"],
+        ["0", "1", "1", "1"],
+        ["1", "0", "0", "1"],
+        ["1", "0", "1", "0"],
+        ["1", "1", "0", "1"],
+        ["1", "1", "1", "1"],
+      ],
+    },
+    guide: [
+      {"title": "Escolha um caminho", "body": ["MUX significa multiplexador. Com o seletor S = 0, Y copia A; com S = 1, Y copia B. A e B levam os dados; S escolhe a origem. Este é um seletor 2 para 1 de um bit, sem entrada de habilitação."]},
+      {"title": "Experimente", "body": ["Ligue três chaves em A, B e S, nessa ordem. Deixe A e B com valores diferentes e alterne S. Na demonstração, as chaves recebem as letras A, B e C: a chave C controla o pino S."]},
+    ],
+  },
+  {
+    kind: "demux", group: "routing",
+    summary: "Envia um sinal para uma de duas saídas; a outra fica em 0.",
+    expr: "Y0 = D·S̄; Y1 = D·S",
+    table: {
+      head: ["D", "S", "Y0", "Y1"],
+      rows: [
+        ["0", "0", "0", "0"],
+        ["0", "1", "0", "0"],
+        ["1", "0", "1", "0"],
+        ["1", "1", "0", "1"],
+      ],
+    },
+    guide: [
+      {"title": "Distribua um sinal", "body": ["DEMUX significa demultiplexador. Com S = 0, D vai para Y0; com S = 1, vai para Y1. A saída não selecionada fica sempre em 0. Este modelo não tem habilitação nem estado de alta impedância."]},
+      {"title": "Experimente", "body": ["Ligue uma chave em D e outra em S, com um LED em cada saída. Deixe D em 1 e alterne o seletor para mover o sinal entre os LEDs. Com D em 0, ambos ficam apagados."]},
+    ],
+  },
+  {
+    kind: "halfadder", group: "arithmetic",
+    summary: "Soma dois bits e mostra a soma e o vai um.",
+    expr: "S = A ⊕ B; C = A·B",
+    table: {
+      head: ["A", "B", "S", "C"],
+      rows: [
+        ["0", "0", "0", "0"],
+        ["0", "1", "1", "0"],
+        ["1", "0", "1", "0"],
+        ["1", "1", "0", "1"],
+      ],
+    },
+    guide: [
+      {"title": "Dois bits, duas saídas", "body": ["O meio somador calcula A + B. S é o bit menos significativo e C é o vai um. Para 1 + 1, S = 0 e C = 1: o resultado binário é 10, lido como C seguido de S."]},
+      {"title": "Experimente", "body": ["Ligue duas chaves em A e B e dois LEDs em S e C. Este bloco equivale a uma XOR e uma AND. Como não recebe vai um, use um somador completo nas etapas seguintes de uma soma de vários bits."]},
+    ],
+  },
+  {
+    kind: "fulladder", group: "arithmetic",
+    summary: "Soma A, B e o vai um de entrada, gerando soma e vai um de saída.",
+    expr: "S = A ⊕ B ⊕ Cin; Cout = A·B + Cin·(A ⊕ B)",
+    table: {
+      head: ["A", "B", "Cin", "S", "Cout"],
+      rows: [
+        ["0", "0", "0", "0", "0"],
+        ["0", "0", "1", "1", "0"],
+        ["0", "1", "0", "1", "0"],
+        ["0", "1", "1", "0", "1"],
+        ["1", "0", "0", "1", "0"],
+        ["1", "0", "1", "0", "1"],
+        ["1", "1", "0", "0", "1"],
+        ["1", "1", "1", "1", "1"],
+      ],
+    },
+    guide: [
+      {"title": "Some com vai um", "body": ["O somador completo calcula A + B + Cin. S é o bit menos significativo e Cout é o vai um da próxima coluna. Para 1 + 1 + 1, as duas saídas são 1: binário 11. Cin é um valor, não um clock."]},
+      {"title": "Experimente", "body": ["Ligue três chaves em A, B e Cin e dois LEDs em S e Cout. Encadeie Cout no Cin do próximo somador para somar números de vários bits. A primeira etapa começa com Cin em 0."]},
+    ],
+  },
   {
     kind: 'switch', group: 'inputs',
     summary: 'Liga e desliga: na posição 1 manda sinal, na 0 não manda.',
@@ -318,5 +459,5 @@ const BASICS: Basic[] = [
   },
 ];
 
-const content: LearnContent = { groupNames: GROUP_NAMES, lessons: LESSONS, basics: BASICS };
+const content: LearnContent = { groupNames: GROUP_NAMES, lessons: [...LESSONS].sort((a, b) => PALETTE.indexOf(a.kind) - PALETTE.indexOf(b.kind)), basics: BASICS };
 export default content;

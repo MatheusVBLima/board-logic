@@ -1,7 +1,7 @@
 import type { Kind } from '../circuit.ts';
 
-export type Group = 'inputs' | 'gates' | 'memory' | 'outputs';
-export const GROUPS: Group[] = ['inputs', 'gates', 'memory', 'outputs'];
+export type Group = 'inputs' | 'gates' | 'routing' | 'arithmetic' | 'memory' | 'outputs';
+export const GROUPS: Group[] = ['inputs', 'gates', 'routing', 'arithmetic', 'memory', 'outputs'];
 
 export interface Lesson {
   kind: Kind;

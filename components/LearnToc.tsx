@@ -30,7 +30,7 @@ export function LearnToc({ groups, label }: { groups: TocGroup[]; label: string 
   }, [groups]);
 
   return (
-    <nav aria-label={label} className="sticky top-20 hidden h-fit w-56 shrink-0 flex-col gap-4 text-[12.5px] lg:flex">
+    <nav aria-label={label} className="sticky top-20 hidden max-h-[calc(100dvh-96px)] w-56 shrink-0 flex-col gap-4 overflow-y-auto pb-4 text-[12.5px] lg:flex">
       {groups.map(g => (
         <div key={g.title}>
           <div className="mb-1.5 text-[10.5px] tracking-[0.14em] uppercase" style={{ color: 'var(--line)' }}>{g.title}</div>

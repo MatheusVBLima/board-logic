@@ -205,3 +205,19 @@
 .preview-switch { cursor: pointer; }
 .preview-hit { fill: transparent; }
 .preview-switch:hover .face.top { stroke: var(--line); }
+
+/* Challenge briefs reserve their own space beside the workbench. */
+.challenge-caption { font-size: 9px; line-height: 1.5; letter-spacing: .12em; text-transform: uppercase; color: var(--ink); }
+.challenge-pin { display: inline-flex; max-width: 100%; overflow-wrap: anywhere; align-items: center; border: 1px solid var(--edge); border-radius: 4px; padding: 3px 7px; font-size: 11px; line-height: 1.5; color: var(--ink-hi); background: var(--panel); }
+
+/* Short viewports can scroll the brief and bench instead of hiding their controls. */
+@media (max-width: 1023px) and (max-height: 700px) {
+  [data-challenge-workspace]:has([data-challenge-panel][data-open="true"]) { height: auto; min-height: 100dvh; }
+  [data-challenge-workspace]:has([data-challenge-panel][data-open="true"]) [data-challenge-panel] { max-height: 420px; }
+  [data-challenge-workspace]:has([data-challenge-panel][data-open="true"]) [data-stage] { flex: none; height: 320px; min-height: 280px; }
+}
+[data-challenge-panel][data-open="false"] { max-height: none; }
+@media (max-width: 1023px) and (max-height: 480px) {
+  [data-challenge-workspace] { height: auto; min-height: 100dvh; }
+  [data-challenge-workspace] [data-stage] { flex: none; height: 320px; min-height: 280px; }
+}

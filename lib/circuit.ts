@@ -3,6 +3,7 @@
 export type Kind =
   | 'switch' | 'button' | 'clock' | 'const'
   | 'not' | 'and' | 'or' | 'xor' | 'nand' | 'nor' | 'xnor'
+  | 'buffer' | 'and3' | 'or3' | 'mux' | 'demux' | 'halfadder' | 'fulladder'
   | 'dff' | 'led' | 'seg7';
 
 export interface Comp {
@@ -54,6 +55,13 @@ export const SPECS: Record<Kind, Spec> = {
   nand:   gate2('NAND', 'NAND', '74·00'),
   nor:    gate2('NOR', 'NOR', '74·02'),
   xnor:   gate2('XNOR', 'XNOR', '74·266'),
+  buffer: { name: 'Buffer', label: 'BUF', w: 3, d: 2, h: 0.5, ins: [1], outs: [1] },
+  and3:   { name: 'AND 3', label: 'AND·3', part: '74·11', w: 3, d: 3, h: 0.5, ins: [0.5, 1.5, 2.5], outs: [1.5], inNames: ['A', 'B', 'C'] },
+  or3:    { name: 'OR 3', label: 'OR·3', part: '74·4075', w: 3, d: 3, h: 0.5, ins: [0.5, 1.5, 2.5], outs: [1.5], inNames: ['A', 'B', 'C'] },
+  mux:    { name: 'MUX 2:1', label: 'MUX', w: 4, d: 3, h: 0.5, ins: [0.5, 1.5, 2.5], outs: [1.5], inNames: ['A', 'B', 'S'], outNames: ['Y'] },
+  demux:  { name: 'DEMUX 1:2', label: 'DEMUX', w: 4, d: 3, h: 0.5, ins: [0.75, 2.25], outs: [0.75, 2.25], inNames: ['D', 'S'], outNames: ['Y0', 'Y1'] },
+  halfadder: { name: 'Meio somador', label: 'HA', w: 4, d: 3, h: 0.5, ins: [0.75, 2.25], outs: [0.75, 2.25], inNames: ['A', 'B'], outNames: ['S', 'C'] },
+  fulladder: { name: 'Somador completo', label: 'FA', w: 4, d: 3, h: 0.5, ins: [0.5, 1.5, 2.5], outs: [0.75, 2.25], inNames: ['A', 'B', 'Cin'], outNames: ['S', 'Cout'] },
   dff:    { name: 'Flip-flop D', label: 'FF-D', part: '74·74', w: 3, d: 3, h: 0.5, ins: [1, 2], outs: [1, 2],
             inNames: ['D', 'CLK'], outNames: ['Q', 'Q̄'] },
   led:    { name: 'LED', label: 'LED', w: 2, d: 2, h: 0.3, ins: [1], outs: [] },
@@ -64,6 +72,7 @@ export const SPECS: Record<Kind, Spec> = {
 export const PALETTE: Kind[] = [
   'switch', 'button', 'clock', 'const',
   'not', 'and', 'or', 'xor', 'nand', 'nor', 'xnor',
+  'buffer', 'and3', 'or3', 'mux', 'demux', 'halfadder', 'fulladder',
   'dff', 'led', 'seg7',
 ];
 

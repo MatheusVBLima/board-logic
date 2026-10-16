@@ -30,6 +30,8 @@ const pt: Dict = {
   parts: {
     switch: 'Chave', button: 'Botão', clock: 'Clock', const: 'Fonte 1',
     not: 'NOT', and: 'AND', or: 'OR', xor: 'XOR', nand: 'NAND', nor: 'NOR', xnor: 'XNOR',
+    buffer: 'Buffer', and3: 'AND · 3', or3: 'OR · 3', mux: 'MUX 2:1', demux: 'DEMUX 1:2',
+    halfadder: 'Meio somador', fulladder: 'Somador completo',
     dff: 'Flip-flop D', led: 'LED', seg7: 'Display',
   },
   sizes: ['Mini', 'Pequeno', 'Médio', 'Grande', 'Enorme', 'Gigante'],
@@ -118,6 +120,8 @@ const pt: Dict = {
     close: 'Fechar',
   },
   challenge: {
+    goal: 'Sua missão', anyParts: 'Qualquer peça', collapse: 'Recolher desafio', expand: 'Expandir desafio',
+    review: 'Revise o circuito', matches: (n, total) => `${n} / ${total} combinações corretas`,
     label: 'Desafio',
     check: 'Verificar',
     checking: 'Verificando…',

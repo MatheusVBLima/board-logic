@@ -178,7 +178,7 @@ export default function Simulator() {
     if (!el) return;
     const ro = new ResizeObserver(([e]) => {
       const { width, height } = e.contentRect;
-      setSize({ w: Math.max(200, width), h: Math.max(200, height) });
+      setSize({ w: Math.max(1, width), h: Math.max(1, height) });
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -203,11 +203,9 @@ export default function Simulator() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // frame the board again once the stage's real size is known (first measure, small screens)
-  const measured = useRef(false);
+  // Reframe when the available canvas changes, including challenge expansion on mobile.
   useEffect(() => {
-    if (measured.current || !loaded.current || (size.w === 1000 && size.h === 600)) return;
-    measured.current = true;
+    if (!loaded.current) return;
     // narrow screens frame the circuit itself; the whole board would be too small to touch
     fitTo(circRef.current, pr, size, size.w >= 640);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -666,7 +664,7 @@ export default function Simulator() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <main className="flex h-dvh gap-3 p-3 sm:p-4">
+      <main data-challenge-workspace={challenge ? true : undefined} className="flex h-dvh gap-3 p-3 sm:p-4">
         <LearnPanel open={learnOpen} onClose={() => setLearnOpen(false)} onAdd={k => addAt(k, null)} />
         <div className="flex min-w-0 flex-1 flex-col gap-3">
         <figure className="relative m-0 flex min-h-0 flex-1 flex-col rounded-[22px] border border-edge bg-panel">
@@ -759,6 +757,8 @@ export default function Simulator() {
             </div>
           </header>
 
+          <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          {challenge && <ChallengeCard key={challenge.id} challenge={challenge} circ={circ} onReset={() => { const c = starterCircuit(challenge); mem.current = {}; commit(c); requestAnimationFrame(() => fitTo(c, pr, sizeRef.current, true)); }} />}
           {/* the board */}
           <div ref={stageRef} data-stage className="relative min-h-0 flex-1 overflow-hidden">
             <svg ref={svgRef} className="board-svg absolute inset-0 h-full w-full outline-none" viewBox={viewBox}
@@ -889,7 +889,6 @@ export default function Simulator() {
                 {movingToDock ? t.board.dropToRemove : t.board.dropOnMenu}
               </div>
             )}
-            {challenge && <ChallengeCard challenge={challenge} circ={circ} onReset={() => { const c = starterCircuit(challenge); mem.current = {}; commit(c); requestAnimationFrame(() => fitTo(c, pr, sizeRef.current, true)); }} />}
             {tableOpen && <TruthTablePanel circ={circ} onClose={() => setTableOpen(false)} />}
             {toast && (
               <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-md border border-edge bg-background/90 px-3 py-1.5 text-xs text-ink-hi">
@@ -901,6 +900,8 @@ export default function Simulator() {
               <Tip label={t.board.zoomOut} side="left"><Button variant="ghost" size="icon-sm" onClick={() => zoomAt(0.8)}><ZoomOut /></Button></Tip>
               <Tip label={t.board.fit} side="left"><Button variant="ghost" size="icon-sm" onClick={() => fitTo(circ, pr, size, true)}><Maximize /></Button></Tip>
             </div>
+          </div>
+
           </div>
 
           {/* bottom caption */}
@@ -918,10 +919,10 @@ export default function Simulator() {
           {palette.map(k => (
             <button key={k} type="button" onPointerDown={e => startNew(k, e)}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); addAt(k, null); } }}
-              className="group flex w-[86px] shrink-0 cursor-grab flex-col items-center gap-1 rounded-xl border border-transparent px-1 pt-1 pb-1.5 text-[10.5px] tracking-[0.08em] text-ink uppercase transition-colors select-none hover:border-edge hover:bg-accent hover:text-ink-hi active:cursor-grabbing"
+              className="group flex w-[100px] shrink-0 cursor-grab flex-col items-center gap-1 rounded-xl border border-transparent px-1 pt-1 pb-1.5 text-[10.5px] tracking-[0.08em] text-ink uppercase transition-colors select-none hover:border-edge hover:bg-accent hover:text-ink-hi active:cursor-grabbing"
               title={t.board.dragToBoard(t.parts[k])}>
               <PartIcon kind={k} />
-              <span className="whitespace-nowrap">{t.parts[k]}</span>
+              <span className="text-center leading-4 whitespace-normal">{t.parts[k]}</span>
             </button>
           ))}
         </nav>
@@ -950,7 +951,7 @@ export default function Simulator() {
                   className="flex flex-col items-center gap-1 rounded-xl border border-transparent px-0.5 pt-1 pb-1.5 text-[10px] tracking-[0.06em] text-ink uppercase select-none active:border-edge active:bg-accent"
                   style={{ touchAction: 'none' }}>
                   <PartIcon kind={k} className="h-[44px] w-[70px]" />
-                  <span className="whitespace-nowrap">{t.parts[k]}</span>
+                  <span className="text-center leading-4 whitespace-normal">{t.parts[k]}</span>
                 </button>
               ))}
             </div>
