@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  BOARD_SIZES, CLOCK_HZ, DEFAULT_GLOW, LED_COLORS, PALETTE, SPECS,
+  BOARD_SIZES, CLOCK_HZ, LED_COLORS, PALETTE, SPECS,
   boardSize, boundsOf, clampPos, decodeCircuit, encodeCircuit, isCircuit, minBoard, newComp, overlaps, pinPos, routeWire, uid,
   type Circuit, type Comp, type Kind, type Wire,
 } from '@/lib/circuit';
@@ -23,6 +23,7 @@ import { hexValue, simulate, type Memory, type SimResult } from '@/lib/sim';
 import { Box, Pads, Part, leadPaths, type PartState } from '@/components/Part';
 import { AccountMenu } from '@/components/AccountMenu';
 import { PrimaryNav } from '@/components/PrimaryNav';
+import { useGlow } from '@/components/GlowProvider';
 import { ChallengeCard } from '@/components/ChallengeCard';
 import { LearnPanel } from '@/components/LearnPanel';
 import { SaveDialog } from '@/components/SaveDialog';
@@ -103,7 +104,7 @@ export default function Simulator() {
 
   const [sel, setSel] = useState<Sel>(null);
   const [iso, setIso] = useState(false);
-  const [glow, setGlow] = useState<string>(DEFAULT_GLOW);
+  const { glow, setGlow } = useGlow();
   const [learnOpen, setLearnOpen] = useState(false);
   const [partsOpen, setPartsOpen] = useState(false);   // mobile parts drawer
   const [paused, setPaused] = useState(false);
@@ -191,10 +192,6 @@ export default function Simulator() {
     if (!start) {
       try { const raw = localStorage.getItem(storeKey); if (raw) { const c = JSON.parse(raw); if (isCircuit(c)) start = c; } } catch { /* ignore */ }
     }
-    try {
-      const g = localStorage.getItem(STORE_KEY + ':glow');
-      if (g && /^#[0-9a-f]{6}$/i.test(g)) setGlow(g);
-    } catch { /* ignore */ }
     if (start) { start = fitBoard(start); setCircRaw(start); }
     loaded.current = true;
     requestAnimationFrame(() => fitTo(start ?? circRef.current, pr, sizeRef.current, true));
@@ -238,12 +235,6 @@ export default function Simulator() {
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [dirty]);
-
-  useEffect(() => {
-    document.documentElement.style.setProperty('--glow', glow);
-    document.documentElement.style.setProperty('--glow-hi', `color-mix(in srgb, ${glow} 55%, white)`);
-    try { localStorage.setItem(STORE_KEY + ':glow', glow); } catch { /* ignore */ }
-  }, [glow]);
 
   // latest values for window listeners
   const circRef = useRef(circ); circRef.current = circ;

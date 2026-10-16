@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import '../globals.css';
 import { SvgFilters } from '@/components/SvgFilters';
 import { I18nProvider } from '@/lib/i18n/client';
+import { GlowProvider } from '@/components/GlowProvider';
+import { GLOW_INIT_SCRIPT } from '@/lib/glow';
 import { HTML_LANG, LOCALES } from '@/lib/i18n/config';
 import { getDict } from '@/lib/i18n/server';
 
@@ -37,11 +39,12 @@ export default async function RootLayout({ children, params }: LayoutProps<'/[la
   return (
     <html lang={HTML_LANG[locale]} className="dark" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: GLOW_INIT_SCRIPT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif&display=swap" />
       </head>
-      <body><SvgFilters /><I18nProvider locale={locale}>{children}</I18nProvider></body>
+      <body><SvgFilters /><GlowProvider><I18nProvider locale={locale}>{children}</I18nProvider></GlowProvider></body>
     </html>
   );
 }

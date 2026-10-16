@@ -180,7 +180,7 @@
 .lb-chip-solid { background: var(--live); border-color: var(--live); color: var(--bg); }
 .lb-body { display: grid; grid-template-columns: 15rem 1fr; }
 .lb-side { padding: 1.25rem 1rem; border-right: 1px solid var(--edge); }
-.lb-canvas { position: relative; height: clamp(22rem, 38vw, 30rem); padding: 1rem 1rem 3rem; background: radial-gradient(circle at 1px 1px, #ffffff14 1px, transparent 0) 0 0 / 18px 18px; --glow-hi: #ffb070; }
+.lb-canvas { position: relative; height: clamp(22rem, 38vw, 30rem); padding: 1rem 1rem 3rem; background: radial-gradient(circle at 1px 1px, #ffffff14 1px, transparent 0) 0 0 / 18px 18px; }
 .lb-hint { position: absolute; left: 50%; bottom: .9rem; transform: translateX(-50%); white-space: nowrap; font-size: 11px; letter-spacing: .08em; color: var(--ink); background: var(--panel); border: 1px solid var(--edge); border-radius: 99px; padding: .3rem .8rem; }
 @media (max-width: 760px) {
   .lb-body { grid-template-columns: 1fr; }
