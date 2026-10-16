@@ -70,15 +70,7 @@ export const PALETTE: Kind[] = [
 /** LED colours; the first entry (empty) follows the glow colour */
 export const LED_COLORS = ['', '#ff5a4f', '#5dff9a', '#4fb4ff', '#c58bff', '#f4f5f5'];
 
-/** Glow colours (iso-glow swatches): live colour and its highlight */
-export const GLOWS = [
-  { id: 'ember', name: 'Brasa', c: '#ff7a1a', hi: '#ffb070' },
-  { id: 'cyan', name: 'Ciano', c: '#22d3ee', hi: '#9beefa' },
-  { id: 'lime', name: 'Lima', c: '#a3e635', hi: '#d6f79f' },
-  { id: 'violet', name: 'Violeta', c: '#a78bfa', hi: '#d6caff' },
-  { id: 'rose', name: 'Rosa', c: '#fb7185', hi: '#fdb8c2' },
-  { id: 'white', name: 'Branco', c: '#dfe9ef', hi: '#ffffff' },
-];
+export const DEFAULT_GLOW = '#ff7a1a';
 export const CLOCK_HZ = [0.5, 1, 2, 4, 8];
 
 export const BOARD_SIZES = [

@@ -1,3 +1,5 @@
+'use client';
+
 import { useMemo } from 'react';
 import { SPECS, newComp, type Kind } from '@/lib/circuit';
 import { makeProj } from '@/lib/iso';

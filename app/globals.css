@@ -135,7 +135,5 @@
 .hot-pin:hover, .hot-pin.cand { fill: var(--live); fill-opacity: 0.18; stroke: var(--live); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .hot-pin.src { fill: var(--glow); fill-opacity: 0.35; }
 
-.stage-glow { transition: background .5s; background: radial-gradient(ellipse 50% 45% at 50% 52%, transparent, transparent); }
-.stage-glow.on { background: radial-gradient(ellipse 50% 45% at 50% 52%, color-mix(in srgb, var(--glow) 10%, transparent), transparent 72%); }
 
-@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } .glass, .stage-glow { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } .glass { transition: none; } }

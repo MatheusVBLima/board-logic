@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { SvgFilters } from "@/components/SvgFilters";
 
 export const metadata: Metadata = {
   title: "Board Lógica",
@@ -20,7 +21,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" />
       </head>
-      <body>{children}</body>
+      <body><SvgFilters />{children}</body>
     </html>
   );
 }
