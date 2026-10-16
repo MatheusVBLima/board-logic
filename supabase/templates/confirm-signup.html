@@ -1,0 +1,61 @@
+<!doctype html>
+<!-- Supabase Auth email: confirm-signup. Paste into Authentication > Emails > Templates.
+     Language follows the user's sign-up language (user_metadata.locale, set by the login form); English otherwise. -->
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><meta name="supported-color-schemes" content="dark"></head>
+<body style="margin:0;padding:0;background:#0c0d0e;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0c0d0e;"><tr><td align="center" style="padding:32px 16px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background:#141516;border:1px solid #222426;border-radius:10px;">
+{{ if eq .Data.locale "pt" }}
+<tr><td style="padding:28px 32px 0 32px;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+    <td style="width:14px;height:14px;border:2px solid #f4f5f5;border-radius:4px;text-align:center;vertical-align:middle;"><div style="width:6px;height:6px;margin:0 auto;border-radius:6px;background:#ff7a1a;"></div></td>
+    <td style="padding-left:10px;font-family:'DM Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:12px;letter-spacing:3px;color:#f4f5f5;">BOARD LÓGICA</td>
+  </tr></table>
+</td></tr>
+<tr><td style="padding:36px 32px 0 32px;font-family:'DM Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:11px;letter-spacing:3px;color:#868b8f;">//// CONTA NOVA</td></tr>
+<tr><td style="padding:12px 32px 0 32px;font-family:'DM Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:30px;line-height:36px;letter-spacing:-1px;color:#f4f5f5;">Confirme seu e-mail</td></tr>
+<tr><td style="padding:16px 32px 0 32px;font-family:'DM Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:14px;line-height:23px;color:#868b8f;">Boas-vindas ao Board Lógica. Confirme seu e-mail para começar a salvar até 10 circuitos.</td></tr>
+<tr><td style="padding:28px 32px 0 32px;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+    <td style="border-radius:6px;background:#f4f5f5;box-shadow:0 0 0 4px rgba(255,122,26,.25);"><a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:13px 22px;font-family:'DM Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:14px;font-weight:500;color:#0c0d0e;text-decoration:none;">Confirmar e-mail &rarr;</a></td>
+  </tr></table>
+</td></tr>
+<tr><td style="padding:28px 32px 0 32px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #222426;border-radius:8px;"><tr>
+    <td style="padding:14px 16px;font-family:'DM Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:12px;line-height:20px;color:#868b8f;">
+      <span style="color:#ffb070;">A</span> 1 &nbsp;&middot;&nbsp; <span style="color:#868b8f;">B</span> 0 &nbsp;&rarr;&nbsp; <span style="display:inline-block;width:8px;height:8px;border-radius:8px;background:#ff7a1a;"></span> <span style="color:#f4f5f5;">S 1</span> &nbsp; <span style="display:inline-block;width:8px;height:8px;border-radius:8px;background:#2b2e30;"></span> C 0
+    </td>
+  </tr></table>
+</td></tr>
+<tr><td style="padding:24px 32px 0 32px;font-family:'DM Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:11px;line-height:18px;color:#5d6266;">O botão não funciona? Cole este link no navegador:<br><a href="{{ .ConfirmationURL }}" style="color:#868b8f;word-break:break-all;">{{ .ConfirmationURL }}</a></td></tr>
+<tr><td style="padding:20px 32px 28px 32px;font-family:'DM Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:11px;line-height:18px;color:#5d6266;">Se não foi você, pode ignorar este e-mail.</td></tr>
+<tr><td style="padding:16px 32px;border-top:1px solid #222426;font-family:'DM Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:11px;letter-spacing:1px;color:#5d6266;">Board Lógica · simulador gratuito de lógica digital</td></tr>
+{{ else }}
+<tr><td style="padding:28px 32px 0 32px;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+    <td style="width:14px;height:14px;border:2px solid #f4f5f5;border-radius:4px;text-align:center;vertical-align:middle;"><div style="width:6px;height:6px;margin:0 auto;border-radius:6px;background:#ff7a1a;"></div></td>
+    <td style="padding-left:10px;font-family:'DM Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:12px;letter-spacing:3px;color:#f4f5f5;">LOGIC BOARD</td>
+  </tr></table>
+</td></tr>
+<tr><td style="padding:36px 32px 0 32px;font-family:'DM Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:11px;letter-spacing:3px;color:#868b8f;">//// NEW ACCOUNT</td></tr>
+<tr><td style="padding:12px 32px 0 32px;font-family:'DM Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:30px;line-height:36px;letter-spacing:-1px;color:#f4f5f5;">Confirm your email</td></tr>
+<tr><td style="padding:16px 32px 0 32px;font-family:'DM Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:14px;line-height:23px;color:#868b8f;">Welcome to Logic Board. Confirm your email to start saving up to 10 circuits.</td></tr>
+<tr><td style="padding:28px 32px 0 32px;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+    <td style="border-radius:6px;background:#f4f5f5;box-shadow:0 0 0 4px rgba(255,122,26,.25);"><a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:13px 22px;font-family:'DM Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:14px;font-weight:500;color:#0c0d0e;text-decoration:none;">Confirm email &rarr;</a></td>
+  </tr></table>
+</td></tr>
+<tr><td style="padding:28px 32px 0 32px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #222426;border-radius:8px;"><tr>
+    <td style="padding:14px 16px;font-family:'DM Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:12px;line-height:20px;color:#868b8f;">
+      <span style="color:#ffb070;">A</span> 1 &nbsp;&middot;&nbsp; <span style="color:#868b8f;">B</span> 0 &nbsp;&rarr;&nbsp; <span style="display:inline-block;width:8px;height:8px;border-radius:8px;background:#ff7a1a;"></span> <span style="color:#f4f5f5;">S 1</span> &nbsp; <span style="display:inline-block;width:8px;height:8px;border-radius:8px;background:#2b2e30;"></span> C 0
+    </td>
+  </tr></table>
+</td></tr>
+<tr><td style="padding:24px 32px 0 32px;font-family:'DM Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:11px;line-height:18px;color:#5d6266;">Button not working? Paste this link into your browser:<br><a href="{{ .ConfirmationURL }}" style="color:#868b8f;word-break:break-all;">{{ .ConfirmationURL }}</a></td></tr>
+<tr><td style="padding:20px 32px 28px 32px;font-family:'DM Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:11px;line-height:18px;color:#5d6266;">If you didn't ask for this, you can ignore this email.</td></tr>
+<tr><td style="padding:16px 32px;border-top:1px solid #222426;font-family:'DM Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:11px;letter-spacing:1px;color:#5d6266;">Logic Board · free digital logic simulator</td></tr>
+{{ end }}
+</table>
+</td></tr></table>
+</body></html>
