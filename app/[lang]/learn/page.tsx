@@ -9,6 +9,7 @@ import { PartIcon } from '@/components/PartIcon';
 import { LearnToc } from '@/components/LearnToc';
 import { SiteHeader } from '@/components/SiteHeader';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/optics/card';
 
 export async function generateMetadata({ params }: PageProps<'/[lang]/learn'>): Promise<Metadata> {
   const { t } = await getDict(params);
@@ -61,10 +62,12 @@ export default async function LearnPage({ params }: PageProps<'/[lang]/learn'>) 
             <h2 className="mb-4 text-[11px] tracking-[0.16em] uppercase" style={{ color: 'var(--line)' }}>{t.learn.basics}</h2>
             <div className="grid gap-4 md:grid-cols-2">
               {L.basics.map(b => (
-                <article key={b.id} id={b.id} className="scroll-mt-20 rounded-2xl border border-edge bg-panel p-5">
-                  <h3 className="text-[15px] text-ink-hi">{b.title}</h3>
-                  {b.body.map((p, i) => <p key={i} className="mt-2.5 text-[13px] leading-relaxed text-ink">{p}</p>)}
-                </article>
+                <Card key={b.id} id={b.id} decorations className="scroll-mt-20 py-5">
+                  <CardHeader className="px-5"><CardTitle className="text-[15px] font-normal text-ink-hi"><h3>{b.title}</h3></CardTitle></CardHeader>
+                  <CardContent className="px-5">
+                    {b.body.map((p, i) => <p key={i} className="mt-2.5 first:mt-0 text-[13px] leading-relaxed text-ink">{p}</p>)}
+                  </CardContent>
+                </Card>
               ))}
             </div>
           </section>
@@ -76,19 +79,16 @@ export default async function LearnPage({ params }: PageProps<'/[lang]/learn'>) 
                 {L.lessons.filter(l => l.group === g).map(l => {
                   const s = SPECS[l.kind];
                   return (
-                    <article key={l.kind} id={l.kind} className="scroll-mt-20 rounded-2xl border border-edge bg-panel p-5 sm:p-6">
+                    <Card key={l.kind} id={l.kind} decorations className="scroll-mt-20 gap-0 pt-5 sm:pt-6">
+                      <CardContent className="px-5 pb-5 sm:px-6 sm:pb-6">
                       <div className="flex flex-wrap items-center gap-5">
                         <div className="grid h-[96px] w-[150px] place-items-center rounded-xl border border-edge bg-background">
                           <PartIcon kind={l.kind} className="h-[80px] w-[130px]" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h3 className="text-xl tracking-[0.08em] text-ink-hi uppercase">{t.parts[l.kind]}</h3>
-                          {s.part && <div className="mt-0.5 text-xs text-ink">{t.learn.chip} {s.part}</div>}
-                          <p className="mt-2 text-sm text-ink-hi/90">{l.summary}</p>
+                          <CardTitle className="text-xl font-normal tracking-[0.08em] text-ink-hi uppercase"><h3>{t.parts[l.kind]}</h3></CardTitle>
+                          <CardDescription className="mt-2 text-sm text-ink-hi/90">{l.summary}</CardDescription>
                         </div>
-                        <Button asChild variant="outline" size="sm" className="border-edge text-ink-hi">
-                          <a href={`${board}#c=${encodeCircuit(demoFor(l.kind))}`}><FlaskConical style={{ color: 'var(--glow)' }} />{t.learn.tryIt}</a>
-                        </Button>
                       </div>
 
                       {(l.expr || l.table) && (
@@ -116,7 +116,14 @@ export default async function LearnPage({ params }: PageProps<'/[lang]/learn'>) 
                           </div>
                         ))}
                       </div>
-                    </article>
+                      </CardContent>
+                      <CardFooter background className="justify-between gap-3">
+                        <span className="text-xs text-ink">{s.part ? `${t.learn.chip} ${s.part}` : ''}</span>
+                        <Button asChild variant="outline" size="sm" className="border-edge bg-panel text-ink-hi">
+                          <a href={`${board}#c=${encodeCircuit(demoFor(l.kind))}`}><FlaskConical style={{ color: 'var(--glow)' }} />{t.learn.tryIt}</a>
+                        </Button>
+                      </CardFooter>
+                    </Card>
                   );
                 })}
               </div>

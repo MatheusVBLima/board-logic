@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/optics/card';
 import { useI18n } from '@/lib/i18n/client';
 import { authEnabled, supabase } from '@/lib/supabase/client';
 
@@ -59,11 +60,13 @@ export function LoginForm() {
   const go = (m: Mode) => { setMode(m); setError(null); setInfo(null); };
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-4 rounded-2xl border border-edge bg-panel p-6">
-      <div>
-        <h1 className="text-lg tracking-[0.06em] text-ink-hi">{title}</h1>
-        {desc && <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink">{desc}</p>}
-      </div>
+    <Card decorations className="gap-5 pt-6">
+    <form onSubmit={submit} className="contents">
+      <CardHeader className="px-6">
+        <CardTitle className="text-lg font-normal tracking-[0.06em] text-ink-hi"><h1>{title}</h1></CardTitle>
+        {desc && <CardDescription className="text-[12.5px] leading-relaxed text-ink">{desc}</CardDescription>}
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4 px-6">
       {mode !== 'reset' && (
         <div className="flex flex-col gap-2">
           <Label htmlFor="email" className="text-xs text-ink">{t.auth.email}</Label>
@@ -82,7 +85,8 @@ export function LoginForm() {
       <Button type="submit" disabled={busy}>
         {mode === 'signup' ? t.auth.submitSignUp : mode === 'signin' ? t.auth.submitSignIn : mode === 'reset' ? t.auth.setPassword : t.auth.forgot}
       </Button>
-      <div className="flex flex-col gap-1 text-[12px] text-ink">
+      </CardContent>
+      <CardFooter background className="flex-col items-start gap-1 text-[12px] text-ink">
         {mode === 'signin' && <>
           <span>{t.auth.noAccount} <button type="button" className="text-ink-hi underline underline-offset-4" onClick={() => go('signup')}>{t.auth.submitSignUp}</button></span>
           <button type="button" className="self-start text-ink underline underline-offset-4 hover:text-ink-hi" onClick={() => go('forgot')}>{t.auth.forgot}</button>
@@ -90,7 +94,8 @@ export function LoginForm() {
         {(mode === 'signup' || mode === 'forgot') && (
           <span>{t.auth.haveAccount} <button type="button" className="text-ink-hi underline underline-offset-4" onClick={() => go('signin')}>{t.auth.submitSignIn}</button></span>
         )}
-      </div>
+      </CardFooter>
     </form>
+    </Card>
   );
 }

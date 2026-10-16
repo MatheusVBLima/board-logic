@@ -6,6 +6,7 @@ import { CHALLENGES, solvedChallenges } from '@/lib/challenges';
 import { useI18n } from '@/lib/i18n/client';
 import { switchLabel } from '@/lib/truth';
 import { Button } from '@/components/ui/button';
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/optics/card';
 
 export function ChallengeList() {
   const { t, locale, href } = useI18n();
@@ -26,15 +27,17 @@ export function ChallengeList() {
               const done = solved.has(c.id);
               const txt = c.text[locale];
               return (
-                <article key={c.id} className="flex flex-col rounded-2xl border border-edge bg-panel p-4">
-                  <div className="flex items-start gap-2">
-                    {done
-                      ? <CheckCircle2 className="mt-0.5 size-4 shrink-0" style={{ color: 'var(--glow)' }} aria-label={t.challengesPage.done} />
-                      : <Circle className="mt-0.5 size-4 shrink-0 text-ink" />}
-                    <h3 className="text-[14px] tracking-[0.06em] text-ink-hi">{txt.title}</h3>
-                  </div>
-                  <p className="mt-2 flex-1 text-[12.5px] leading-relaxed text-ink">{txt.goal}</p>
-                  <div className="mt-3 flex items-center justify-between gap-2">
+                <Card key={c.id} decorations>
+                  <CardHeader className="flex-1">
+                    <CardTitle className="flex items-start gap-2 text-[14px] font-normal tracking-[0.06em] text-ink-hi">
+                      {done
+                        ? <CheckCircle2 className="mt-0.5 size-4 shrink-0" style={{ color: 'var(--glow)' }} aria-label={t.challengesPage.done} />
+                        : <Circle className="mt-0.5 size-4 shrink-0 text-ink" />}
+                      <h3>{txt.title}</h3>
+                    </CardTitle>
+                    <CardDescription className="text-[12.5px] leading-relaxed text-ink">{txt.goal}</CardDescription>
+                  </CardHeader>
+                  <CardFooter background className="justify-between gap-2">
                     <span className="text-[11px] text-ink">
                       {c.inputs.length > 1 ? `${switchLabel(0)}…${switchLabel(c.inputs.length - 1)}` : switchLabel(0)} → {c.outputs.length} LED
                       {c.allowed && ` · ${c.allowed.map(k => t.parts[k]).join(', ')}`}
@@ -42,8 +45,8 @@ export function ChallengeList() {
                     <Button asChild size="sm" variant={done ? 'outline' : 'default'} className={done ? 'border-edge text-ink-hi' : undefined}>
                       <a href={`${href('/board')}?challenge=${c.id}`}>{done ? t.challengesPage.retry : t.challengesPage.start}</a>
                     </Button>
-                  </div>
-                </article>
+                  </CardFooter>
+                </Card>
               );
             })}
           </div>

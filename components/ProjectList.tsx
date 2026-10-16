@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { FilePlus2, FolderOpen, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/optics/card';
 import { useI18n } from '@/lib/i18n/client';
 import { PROJECT_LIMIT, deleteProject, listProjects, updateProject, type ProjectSummary } from '@/lib/projects';
 import { authEnabled, useUser } from '@/lib/supabase/client';
@@ -57,20 +58,26 @@ export function ProjectList() {
       {items && !items.length && <p className="mt-8 text-sm text-ink">{t.projects.empty}</p>}
       <ul className="mt-6 grid gap-3 sm:grid-cols-2">
         {items?.map(p => (
-          <li key={p.id} className="flex flex-col gap-3 rounded-2xl border border-edge bg-panel p-4">
+          <li key={p.id}>
+           <Card decorations className="h-full">
+            <CardHeader className="flex-1">
+            <CardTitle className="text-[15px] font-normal tracking-[0.04em] text-ink-hi">
             {editing === p.id ? (
               <form onSubmit={e => { e.preventDefault(); rename(p.id); }}>
                 <Input autoFocus value={name} maxLength={80} onChange={e => setName(e.target.value)} onBlur={() => rename(p.id)} className="border-edge" />
               </form>
             ) : (
-              <a href={`${href('/board')}?p=${p.id}`} className="text-[15px] tracking-[0.04em] text-ink-hi hover:underline">{p.name}</a>
+              <a href={`${href('/board')}?p=${p.id}`} className="hover:underline">{p.name}</a>
             )}
-            <p className="text-[11.5px] text-ink">{t.projects.parts(p.parts)} · {t.projects.updated} {fmt.format(new Date(p.updated_at))}</p>
-            <div className="flex gap-1">
+            </CardTitle>
+            <CardDescription className="text-[11.5px] text-ink">{t.projects.parts(p.parts)} · {t.projects.updated} {fmt.format(new Date(p.updated_at))}</CardDescription>
+            </CardHeader>
+            <CardFooter background className="flex-wrap gap-1">
               <Button asChild size="sm"><a href={`${href('/board')}?p=${p.id}`}><FolderOpen />{t.projects.open}</a></Button>
               <Button size="sm" variant="ghost" className="text-ink hover:text-ink-hi" onClick={() => { setEditing(p.id); setName(p.name); }}><Pencil />{t.projects.rename}</Button>
               <Button size="sm" variant="ghost" className="text-ink hover:text-destructive" onClick={() => remove(p)}><Trash2 />{t.projects.delete}</Button>
-            </div>
+            </CardFooter>
+           </Card>
           </li>
         ))}
       </ul>
