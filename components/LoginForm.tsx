@@ -60,33 +60,33 @@ export function LoginForm() {
   const go = (m: Mode) => { setMode(m); setError(null); setInfo(null); };
 
   return (
-    <Card decorations className="gap-5 pt-6">
+    <Card decorations className="gap-6 pt-8">
     <form onSubmit={submit} className="contents">
-      <CardHeader className="px-6">
-        <CardTitle className="text-lg font-normal tracking-[0.06em] text-ink-hi"><h1>{title}</h1></CardTitle>
-        {desc && <CardDescription className="text-[12.5px] leading-relaxed text-ink">{desc}</CardDescription>}
+      <CardHeader className="px-6 sm:px-8">
+        <CardTitle className="text-2xl font-normal tracking-[0.06em] text-ink-hi"><h1>{title}</h1></CardTitle>
+        {desc && <CardDescription className="text-[13.5px] leading-relaxed text-ink">{desc}</CardDescription>}
       </CardHeader>
-      <CardContent className="flex flex-col gap-4 px-6">
+      <CardContent className="flex flex-col gap-5 px-6 pb-2 sm:px-8">
       {mode !== 'reset' && (
         <div className="flex flex-col gap-2">
           <Label htmlFor="email" className="text-xs text-ink">{t.auth.email}</Label>
-          <Input id="email" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} className="border-edge" />
+          <Input id="email" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} className="h-11 border-edge" />
         </div>
       )}
       {mode !== 'forgot' && (
         <div className="flex flex-col gap-2">
           <Label htmlFor="password" className="text-xs text-ink">{mode === 'reset' ? t.auth.newPassword : t.auth.password}</Label>
           <Input id="password" type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)}
-            autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} className="border-edge" />
+            autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} className="h-11 border-edge" />
         </div>
       )}
       {error && <p className="text-xs text-destructive">{error}</p>}
       {info && <p className="text-xs leading-relaxed" style={{ color: 'var(--glow)' }}>{info}</p>}
-      <Button type="submit" disabled={busy}>
+      <Button type="submit" size="lg" className="h-11" disabled={busy}>
         {mode === 'signup' ? t.auth.submitSignUp : mode === 'signin' ? t.auth.submitSignIn : mode === 'reset' ? t.auth.setPassword : t.auth.forgot}
       </Button>
       </CardContent>
-      <CardFooter background className="flex-col items-start gap-1 text-[12px] text-ink">
+      <CardFooter background className="flex-col items-start gap-1.5 px-6 text-[13px] text-ink sm:px-8">
         {mode === 'signin' && <>
           <span>{t.auth.noAccount} <button type="button" className="text-ink-hi underline underline-offset-4" onClick={() => go('signup')}>{t.auth.submitSignUp}</button></span>
           <button type="button" className="self-start text-ink underline underline-offset-4 hover:text-ink-hi" onClick={() => go('forgot')}>{t.auth.forgot}</button>

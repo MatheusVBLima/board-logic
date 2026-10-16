@@ -5,6 +5,7 @@ import { getDict } from '@/lib/i18n/server';
 import { LandingBoard } from '@/components/LandingBoard';
 import { AccountMenu } from '@/components/AccountMenu';
 import { SharedLinkRedirect } from '@/components/SharedLinkRedirect';
+import { Logo } from '@/components/Logo';
 
 export async function generateMetadata({ params }: PageProps<'/[lang]'>): Promise<Metadata> {
   const { t } = await getDict(params);
@@ -24,7 +25,7 @@ export default async function Landing({ params }: PageProps<'/[lang]'>) {
 
       <header className="relative mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
         <Link href={`/${locale}`} className="landing-brand flex items-center gap-2.5">
-          <span className="landing-mark" aria-hidden />{t.brand}
+          <Logo className="size-6" />{t.brand}
         </Link>
         <nav className="flex items-center gap-1 sm:gap-5">
           <Link href={`/${locale}/learn`} className="landing-link max-sm:hidden">{t.nav.learn}</Link>

@@ -25,7 +25,6 @@ const en = {
     signOut: 'Sign out',
     language: 'Language',
     account: 'Account',
-    backToBoard: 'Back to the board',
     openBoard: 'Open the board',
   },
   parts: {
@@ -169,6 +168,8 @@ const en = {
     newPassword: 'New password',
     setPassword: 'Save new password',
     passwordUpdated: 'Password updated.',
+    figureLabel: 'Logic board with three switches, the AND, OR, XOR and NAND gates, their LEDs and a display',
+    figureHint: 'Click A, B or C to flip a switch',
   },
   projects: {
     title: 'My projects',
@@ -191,7 +192,6 @@ const en = {
     truthTable: 'Truth table',
     chip: 'chip',
     tryIt: 'Try it on the board',
-    backAndTry: 'Back to the board and try it',
     fullGuide: 'Full guide',
     close: 'Close',
     placeOnBoard: 'Place on the board',
