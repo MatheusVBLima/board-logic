@@ -30,6 +30,8 @@ const en = {
   parts: {
     switch: 'Switch', button: 'Button', clock: 'Clock', const: 'Source 1',
     not: 'NOT', and: 'AND', or: 'OR', xor: 'XOR', nand: 'NAND', nor: 'NOR', xnor: 'XNOR',
+    buffer: 'Buffer', and3: 'AND · 3', or3: 'OR · 3', mux: 'MUX 2:1', demux: 'DEMUX 1:2',
+    halfadder: 'Half adder', fulladder: 'Full adder',
     dff: 'D flip-flop', led: 'LED', seg7: 'Display',
   } satisfies Record<Kind, string>,
   sizes: ['Mini', 'Small', 'Medium', 'Large', 'Huge', 'Giant'],
@@ -119,6 +121,8 @@ const en = {
     close: 'Close',
   },
   challenge: {
+    goal: 'Your mission', anyParts: 'Any part', collapse: 'Collapse challenge', expand: 'Expand challenge',
+    review: 'Review the circuit', matches: (n: number, total: number) => `${n} / ${total} combinations correct`,
     label: 'Challenge',
     check: 'Check',
     checking: 'Checking…',

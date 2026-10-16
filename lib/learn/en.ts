@@ -1,6 +1,7 @@
 // English teaching texts: a one-line summary per part for the "Learn" sidebar and
 // the complete guide on /en/learn.
 
+import { PALETTE } from '../circuit.ts';
 import type { Basic, Lesson, LearnContent } from './types.ts';
 
 const t2 = (f: (a: number, b: number) => number) => ({
@@ -8,9 +9,149 @@ const t2 = (f: (a: number, b: number) => number) => ({
   rows: [[0, 0], [0, 1], [1, 0], [1, 1]].map(([a, b]) => [a, b, f(a, b)].map(String)),
 });
 
-const GROUP_NAMES = { inputs: 'Inputs', gates: 'Logic gates', memory: 'Memory', outputs: 'Outputs' };
+const GROUP_NAMES = { inputs: 'Inputs', gates: 'Logic gates', routing: 'Signal routing', arithmetic: 'Arithmetic', memory: 'Memory', outputs: 'Outputs' };
 
 const LESSONS: Lesson[] = [
+  {
+    kind: "buffer", group: "gates",
+    summary: "Copies the input without inversion: 0 stays 0, 1 stays 1.",
+    expr: "Y = A",
+    table: {
+      head: ["A", "Y"],
+      rows: [
+        ["0", "0"],
+        ["1", "1"],
+      ],
+    },
+    guide: [
+      {"title": "What it does", "body": ["A buffer has one input and one output. Unlike NOT, it preserves the logical value. In real hardware it can drive a load or isolate circuit stages; this ideal simulator models only its logic, without voltage, current or propagation delay."]},
+      {"title": "Try it", "body": ["Connect a switch to A and an LED to Y. The LED follows the switch. A buffer is not a tri-state buffer: there is no enable pin or high-impedance state here."]},
+    ],
+  },
+  {
+    kind: "and3", group: "gates",
+    summary: "Gives 1 only when all three inputs are 1.",
+    expr: "Y = A · B · C",
+    table: {
+      head: ["A", "B", "C", "Y"],
+      rows: [
+        ["0", "0", "0", "0"],
+        ["0", "0", "1", "0"],
+        ["0", "1", "0", "0"],
+        ["0", "1", "1", "0"],
+        ["1", "0", "0", "0"],
+        ["1", "0", "1", "0"],
+        ["1", "1", "0", "0"],
+        ["1", "1", "1", "1"],
+      ],
+    },
+    guide: [
+      {"title": "Three conditions at once", "body": ["A three-input AND extends the two-input AND: A, B and C must all be 1. Any 0 forces Y to 0. It is equivalent to two two-input AND gates in series."]},
+      {"title": "Try it", "body": ["Wire three switches to A, B and C and an LED to the output. Try a safety interlock: power, door closed and permission must all be true."]},
+    ],
+  },
+  {
+    kind: "or3", group: "gates",
+    summary: "Gives 1 when any of its three inputs is 1.",
+    expr: "Y = A + B + C",
+    table: {
+      head: ["A", "B", "C", "Y"],
+      rows: [
+        ["0", "0", "0", "0"],
+        ["0", "0", "1", "1"],
+        ["0", "1", "0", "1"],
+        ["0", "1", "1", "1"],
+        ["1", "0", "0", "1"],
+        ["1", "0", "1", "1"],
+        ["1", "1", "0", "1"],
+        ["1", "1", "1", "1"],
+      ],
+    },
+    guide: [
+      {"title": "Three possible triggers", "body": ["A three-input OR is 0 only for 000. One, two or three active inputs all produce 1. It is equivalent to two two-input OR gates in series."]},
+      {"title": "Try it", "body": ["Connect three alarm sensors represented by switches. Any active sensor lights the LED. This is inclusive OR, not odd parity."]},
+    ],
+  },
+  {
+    kind: "mux", group: "routing",
+    summary: "Selects which of two signals reaches the output.",
+    expr: "Y = A·S̄ + B·S",
+    table: {
+      head: ["A", "B", "S", "Y"],
+      rows: [
+        ["0", "0", "0", "0"],
+        ["0", "0", "1", "0"],
+        ["0", "1", "0", "0"],
+        ["0", "1", "1", "1"],
+        ["1", "0", "0", "1"],
+        ["1", "0", "1", "0"],
+        ["1", "1", "0", "1"],
+        ["1", "1", "1", "1"],
+      ],
+    },
+    guide: [
+      {"title": "Choose a path", "body": ["MUX means multiplexer. With selector S = 0, Y copies A; with S = 1, Y copies B. A and B carry data; S chooses the source. This is a one-bit 2-to-1 selector without an enable input."]},
+      {"title": "Try it", "body": ["Connect three switches to A, B and S in that order. Give A and B different values, then toggle S. In the demo they appear as switches A, B and C: C controls pin S."]},
+    ],
+  },
+  {
+    kind: "demux", group: "routing",
+    summary: "Sends one signal to one of two outputs; the other stays 0.",
+    expr: "Y0 = D·S̄; Y1 = D·S",
+    table: {
+      head: ["D", "S", "Y0", "Y1"],
+      rows: [
+        ["0", "0", "0", "0"],
+        ["0", "1", "0", "0"],
+        ["1", "0", "1", "0"],
+        ["1", "1", "0", "1"],
+      ],
+    },
+    guide: [
+      {"title": "Distribute a signal", "body": ["DEMUX means demultiplexer. With S = 0, D goes to Y0; with S = 1, D goes to Y1. The unselected output is always 0. This model has no enable input or high-impedance state."]},
+      {"title": "Try it", "body": ["Wire one switch to D and another to S, with an LED on each output. Set D to 1 to see the selector move the signal between the LEDs. With D at 0, both LEDs stay off."]},
+    ],
+  },
+  {
+    kind: "halfadder", group: "arithmetic",
+    summary: "Adds two bits and exposes both sum and carry.",
+    expr: "S = A ⊕ B; C = A·B",
+    table: {
+      head: ["A", "B", "S", "C"],
+      rows: [
+        ["0", "0", "0", "0"],
+        ["0", "1", "1", "0"],
+        ["1", "0", "1", "0"],
+        ["1", "1", "0", "1"],
+      ],
+    },
+    guide: [
+      {"title": "Two bits, two outputs", "body": ["The half adder computes A + B. S is the low bit and C is the carry. For 1 + 1, S = 0 and C = 1: the binary result is 10, read as C then S."]},
+      {"title": "Try it", "body": ["Connect two switches to A and B and two LEDs to S and C. This block is equivalent to an XOR and an AND. It has no carry input, so use a full adder for later stages of a multi-bit addition."]},
+    ],
+  },
+  {
+    kind: "fulladder", group: "arithmetic",
+    summary: "Adds A, B and an incoming carry, producing sum and carry out.",
+    expr: "S = A ⊕ B ⊕ Cin; Cout = A·B + Cin·(A ⊕ B)",
+    table: {
+      head: ["A", "B", "Cin", "S", "Cout"],
+      rows: [
+        ["0", "0", "0", "0", "0"],
+        ["0", "0", "1", "1", "0"],
+        ["0", "1", "0", "1", "0"],
+        ["0", "1", "1", "0", "1"],
+        ["1", "0", "0", "1", "0"],
+        ["1", "0", "1", "0", "1"],
+        ["1", "1", "0", "0", "1"],
+        ["1", "1", "1", "1", "1"],
+      ],
+    },
+    guide: [
+      {"title": "Add with a carry", "body": ["The full adder computes A + B + Cin. S is the low bit and Cout is the carry to the next column. For 1 + 1 + 1, both outputs are 1: binary 11. The input Cin is a value, not a clock."]},
+      {"title": "Try it", "body": ["Connect three switches to A, B and Cin and two LEDs to S and Cout. Chain Cout into Cin of the next full adder to add multi-bit numbers. The first stage starts with Cin at 0."]},
+    ],
+  },
   {
     kind: 'switch', group: 'inputs',
     summary: 'On and off: in position 1 it sends a signal, in 0 it does not.',
@@ -318,5 +459,5 @@ const BASICS: Basic[] = [
   },
 ];
 
-const content: LearnContent = { groupNames: GROUP_NAMES, lessons: LESSONS, basics: BASICS };
+const content: LearnContent = { groupNames: GROUP_NAMES, lessons: [...LESSONS].sort((a, b) => PALETTE.indexOf(a.kind) - PALETTE.indexOf(b.kind)), basics: BASICS };
 export default content;

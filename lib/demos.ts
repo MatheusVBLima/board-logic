@@ -21,11 +21,18 @@ export function demoFor(kind: Kind): Circuit {
     add('q', 'led', 18, 5); add('qn', 'led', 18, 9);
     link('d', 0, 'f', 0); link('c', 0, 'f', 1); link('f', 0, 'q', 0); link('f', 1, 'qn', 0);
   } else if (s.ins.length === 1) {
-    add('a', 'switch', 4, 7); add('g', kind, 10, 7); add('l', 'led', 17, 7);
+    add('a', 'switch', 4, 7); add('g', kind, 10, 7); add('l', 'led', 18, 7);
     link('a', 0, 'g', 0); link('g', 0, 'l', 0);
   } else {
-    add('a', 'switch', 3, 4); add('b', 'switch', 3, 10); add('g', kind, 11, 6); add('l', 'led', 18, 6);
-    link('a', 0, 'g', 0); link('b', 0, 'g', 1); link('g', 0, 'l', 0);
+    s.ins.forEach((_, i) => {
+      add(`s${i}`, 'switch', 3, 2 + i * 4);
+      link(`s${i}`, 0, 'g', i);
+    });
+    add('g', kind, 11, 6);
+    s.outs.forEach((_, i) => {
+      add(`l${i}`, 'led', 20, 4 + i * 5);
+      link('g', i, `l${i}`, 0);
+    });
   }
   return { comps, wires, w: 24, h: 16 };
 }

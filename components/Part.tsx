@@ -74,6 +74,16 @@ export function Part({ pr, c, st, cls = '', tag }: { pr: Proj; c: Comp; st: Part
           <Chip pr={pr} x={x} y={y} w={s.w} d={s.d}><ChipName w={s.w} dd={s.d - 2 * INSET} label={s.label} part={s.part} /></Chip>
         </g>
       );
+    case 'buffer': case 'and3': case 'or3': case 'mux': case 'demux': case 'halfadder': case 'fulladder':
+      return (
+        <g className={cls}>
+          <Chip pr={pr} x={x} y={y} w={s.w} d={s.d}>
+            <ChipName w={s.w} dd={s.d - 2 * INSET} label={s.label} />
+            {s.inNames?.map((name, i) => <text key={`in${i}`} className={`chip-txt ${st.ins[i] ? 'on' : ''}`} x={0.22} y={s.ins[i] - INSET + 0.08} style={{ fontSize: 0.2 }}>{name}</text>)}
+            {s.outNames?.map((name, i) => <text key={`out${i}`} className={`chip-txt ${st.outs[i] ? 'on' : ''}`} x={s.w - 0.22} y={s.outs[i] - INSET + 0.08} textAnchor="end" style={{ fontSize: 0.2 }}>{name}</text>)}
+          </Chip>
+        </g>
+      );
     case 'dff': {
       const q = st.outs[0] ?? 0;
       const dd = s.d - 2 * INSET;

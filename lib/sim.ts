@@ -68,6 +68,16 @@ function evaluate(c: Comp, i: number[], input: SimInput, mem: Memory): number[] 
     case 'nand':   return [(a & b) ^ 1];
     case 'nor':    return [(a | b) ^ 1];
     case 'xnor':   return [(a ^ b) ^ 1];
+    case 'buffer': return [a];
+    case 'and3': return [a & b & (i[2] ?? 0)];
+    case 'or3': return [a | b | (i[2] ?? 0)];
+    case 'mux': return [i[2] ? b : a];
+    case 'demux': return [b ? 0 : a, b ? a : 0];
+    case 'halfadder': return [a ^ b, a & b];
+    case 'fulladder': {
+      const sum = a + b + (i[2] ?? 0);
+      return [sum & 1, sum >> 1];
+    }
     case 'dff': {
       const m = (mem[c.id] ??= { q: 0, prev: 0 });
       if (b && !m.prev) m.q = a;   // rising edge of CLK latches D

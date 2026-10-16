@@ -6,7 +6,9 @@ Arraste peças do menu de baixo para o board, puxe fios entre os pinos e veja o 
 ## Peças
 
 - **Entradas:** chave (liga/desliga), botão (momentâneo), clock (0,5 a 8 Hz), fonte 1
-- **Portas:** NOT, AND, OR, XOR, NAND, NOR, XNOR
+- **Portas:** NOT, AND, OR, XOR, NAND, NOR, XNOR, buffer, AND e OR de três entradas
+- **Roteamento:** multiplexador 2:1 (MUX) e demultiplexador 1:2 (DEMUX)
+- **Aritmética:** meio somador e somador completo de um bit
 - **Memória:** flip-flop D (sensível à borda de subida)
 - **Saídas:** LED (clique para trocar a cor), display hexadecimal de 7 segmentos
 
@@ -36,6 +38,7 @@ em `lib/iso.ts` + `components/Part.tsx`.
 
 - O site é em inglês por padrão (`/en/...`) e em português em `/pt/...`. Os textos ficam em `lib/i18n/en.ts` e
   `lib/i18n/pt.ts`, e o guia em `lib/learn/en.ts` e `lib/learn/pt.ts`. Quem escolhe um idioma fica nele (cookie).
+- O guia inclui expressões, tabelas-verdade e demonstrações para todas as peças. Os 18 desafios vão de portas universais a roteamento de sinais, decodificação e soma de dois bits. As referências e simplificações dos novos componentes estão em [`docs/logic-components.md`](docs/logic-components.md).
 - Rotas: `/[lang]` landing, `/[lang]/board` simulador, `/[lang]/learn` guia, `/[lang]/challenges` desafios,
   `/[lang]/login` e `/[lang]/projects`.
 - Contas e projetos salvos usam Supabase (até 10 projetos por usuário). Aplique
