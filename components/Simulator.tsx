@@ -2,17 +2,19 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
-  BookOpen, Eraser, Link2, Maximize, Moon, Palette, Pause, Play, Redo2, Sun, Trash2, Undo2, ZoomIn, ZoomOut,
+  BookOpen, Eraser, GraduationCap, Grid3x3, Link2, Maximize, Pause, Play, Redo2, Trash2, Undo2, ZoomIn, ZoomOut,
 } from 'lucide-react';
 import {
-  BOARD_H, BOARD_W, CLOCK_HZ, LED_COLORS, PALETTE, SPECS,
-  boundsOf, clampPos, decodeCircuit, encodeCircuit, isCircuit, newComp, overlaps, pinPos, routeWire, uid,
+  BOARD_SIZES, CLOCK_HZ, GLOWS, LED_COLORS, PALETTE, SPECS,
+  boardSize, boundsOf, clampPos, decodeCircuit, encodeCircuit, isCircuit, minBoard, newComp, overlaps, pinPos, routeWire, uid,
   type Circuit, type Comp, type Kind, type Wire,
 } from '@/lib/circuit';
 import { EXAMPLES } from '@/lib/examples';
 import { makeProj, type Proj } from '@/lib/iso';
 import { hexValue, simulate, type Memory, type SimResult } from '@/lib/sim';
-import { Box, Leads, Part, type PartState } from '@/components/Part';
+import { Box, Pads, Part, leadPaths, type PartState } from '@/components/Part';
+import { LearnPanel } from '@/components/LearnPanel';
+import { PartIcon } from '@/components/PartIcon';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -41,7 +43,14 @@ const emptySim: SimResult = { out: {}, inp: {}, unstable: false };
 const partState = (sim: SimResult, c: Comp, pressed: Set<string>): PartState => ({
   ins: sim.inp[c.id] ?? [], outs: sim.out[c.id] ?? [], pressed: pressed.has(c.id),
 });
-const depth = (c: Comp) => c.x + c.y + (SPECS[c.kind].w + SPECS[c.kind].d) / 2;
+// front view: parts further back (smaller y) are drawn first
+const depth = (c: Comp) => c.y + SPECS[c.kind].d + c.x * 0.001;
+const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
+/** a saved circuit grows its board if a part sits outside it */
+const fitBoard = (c: Circuit): Circuit => {
+  const m = minBoard(c), b = boardSize(c);
+  return m.w > b.w || m.h > b.h ? { ...c, w: Math.max(b.w, m.w), h: Math.max(b.h, m.h) } : c;
+};
 
 export default function Simulator() {
   // ---------- circuit + history ----------
@@ -75,8 +84,8 @@ export default function Simulator() {
 
   const [sel, setSel] = useState<Sel>(null);
   const [iso, setIso] = useState(true);
-  const [dark, setDark] = useState(true);
-  const [glow, setGlow] = useState<string | null>(null);
+  const [glow, setGlow] = useState<string>(GLOWS[0].id);
+  const [learnOpen, setLearnOpen] = useState(false);
   const [paused, setPaused] = useState(false);
   const [pressed, setPressed] = useState<Set<string>>(() => new Set());
   const [drag, setDragState] = useState<Drag | null>(null);
@@ -122,12 +131,13 @@ export default function Simulator() {
   const [size, setSize] = useState({ w: 1000, h: 600 });
   const [view, setView] = useState<View>({ cx: 0, cy: 200, zoom: 1 });
 
-  const fitTo = useCallback((c: Circuit, p: Proj, s = size) => {
-    const b = boundsOf(c);
+  const fitTo = useCallback((c: Circuit, p: Proj, s = size, whole = false) => {
+    const bs = boardSize(c);
+    const b = whole ? { x0: -2.5, y0: -2.5, x1: bs.w + 2.5, y1: bs.h + 2.5 } : boundsOf(c);
     const pts = [[b.x0, b.y0], [b.x1, b.y0], [b.x0, b.y1], [b.x1, b.y1]].flatMap(([x, y]) => [p.P(x, y, 0), p.P(x, y, 1.2)]);
     const xs = pts.map(q => q[0]), ys = pts.map(q => q[1]);
     const w = Math.max(...xs) - Math.min(...xs), h = Math.max(...ys) - Math.min(...ys);
-    const zoom = Math.max(0.35, Math.min(2.4, Math.min(s.w / (w * 1.18), s.h / (h * 1.22))));
+    const zoom = Math.max(0.15, Math.min(2.4, Math.min(s.w / (w * (whole ? 1.06 : 1.18)), s.h / (h * (whole ? 1.08 : 1.22)))));
     setView({ cx: (Math.max(...xs) + Math.min(...xs)) / 2, cy: (Math.max(...ys) + Math.min(...ys)) / 2, zoom });
   }, [size]);
 
@@ -152,16 +162,23 @@ export default function Simulator() {
       try { const raw = localStorage.getItem(STORE_KEY); if (raw) { const c = JSON.parse(raw); if (isCircuit(c)) start = c; } } catch { /* ignore */ }
     }
     try {
-      const t = localStorage.getItem(STORE_KEY + ':theme');
-      if (t) setDark(t === 'dark');
       const g = localStorage.getItem(STORE_KEY + ':glow');
-      if (g) setGlow(g);
+      if (g && GLOWS.some(x => x.id === g)) setGlow(g);
     } catch { /* ignore */ }
-    if (start) setCircRaw(start);
+    if (start) { start = fitBoard(start); setCircRaw(start); }
     loaded.current = true;
-    requestAnimationFrame(() => fitTo(start ?? circRef.current, pr, sizeRef.current));
+    requestAnimationFrame(() => fitTo(start ?? circRef.current, pr, sizeRef.current, true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // frame the board again once the stage's real size is known (first measure, small screens)
+  const measured = useRef(false);
+  useEffect(() => {
+    if (measured.current || !loaded.current || (size.w === 1000 && size.h === 600)) return;
+    measured.current = true;
+    fitTo(circRef.current, pr, size, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [size]);
 
   useEffect(() => {
     if (!loaded.current) return;
@@ -170,13 +187,10 @@ export default function Simulator() {
   }, [circ]);
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark);
-    try { localStorage.setItem(STORE_KEY + ':theme', dark ? 'dark' : 'light'); } catch { /* ignore */ }
-  }, [dark]);
-  useEffect(() => {
-    if (glow) document.documentElement.style.setProperty('--glow', glow);
-    else document.documentElement.style.removeProperty('--glow');
-    try { if (glow) localStorage.setItem(STORE_KEY + ':glow', glow); } catch { /* ignore */ }
+    const g = GLOWS.find(x => x.id === glow) ?? GLOWS[0];
+    document.documentElement.style.setProperty('--glow', g.c);
+    document.documentElement.style.setProperty('--glow-hi', g.hi);
+    try { localStorage.setItem(STORE_KEY + ':glow', g.id); } catch { /* ignore */ }
   }, [glow]);
 
   // latest values for window listeners
@@ -245,19 +259,20 @@ export default function Simulator() {
   const removeSel = useCallback(() => {
     const s = selRef.current;
     if (!s) return;
-    if (s.type === 'comp') commit(c => ({ comps: c.comps.filter(k => k.id !== s.id), wires: c.wires.filter(w => w.from.c !== s.id && w.to.c !== s.id) }));
+    if (s.type === 'comp') commit(c => ({ ...c, comps: c.comps.filter(k => k.id !== s.id), wires: c.wires.filter(w => w.from.c !== s.id && w.to.c !== s.id) }));
     else commit(c => ({ ...c, wires: c.wires.filter(w => w.id !== s.id) }));
     setSel(null);
   }, [commit]);
 
   const freeSpot = (c: Circuit, kind: Kind, x: number, y: number): [number, number] => {
-    for (let r = 0; r < 12; r++) {
+    const b = boardSize(c);
+    for (let r = 0; r < 24; r++) {
       for (const [dx, dy] of [[0, 0], [0, 3], [4, 0], [0, -3], [-4, 0], [4, 3], [-4, -3], [4, -3], [-4, 3]]) {
-        const [px, py] = clampPos(kind, Math.round(x + dx * r), Math.round(y + dy * r));
+        const [px, py] = clampPos(kind, Math.round(x + dx * r), Math.round(y + dy * r), b);
         if (!overlaps(c, kind, px, py)) return [px, py];
       }
     }
-    return clampPos(kind, Math.round(x), Math.round(y));
+    return clampPos(kind, Math.round(x), Math.round(y), b);
   };
 
   const addAt = useCallback((kind: Kind, pos: [number, number] | null) => {
@@ -267,7 +282,8 @@ export default function Simulator() {
       const v = viewRef.current;
       const rect = svgRef.current?.getBoundingClientRect();
       const bp = rect ? boardPoint(rect.left + rect.width / 2, rect.top + rect.height / 2) : null;
-      at = freeSpot(circRef.current, kind, (bp?.[0] ?? BOARD_W / 2) - s.w / 2, (bp?.[1] ?? BOARD_H / 2) - s.d / 2);
+      const b = boardSize(circRef.current);
+      at = freeSpot(circRef.current, kind, (bp?.[0] ?? b.w / 2) - s.w / 2, (bp?.[1] ?? b.h / 2) - s.d / 2);
       void v;
     }
     const comp = newComp(kind, at[0], at[1]);
@@ -282,12 +298,12 @@ export default function Simulator() {
     mem.current = {}; lastOut.current = {};
     commit(c);
     setSel(null);
-    requestAnimationFrame(() => fitTo(c, pr));
+    requestAnimationFrame(() => fitTo(c, pr, sizeRef.current, true));
   };
 
   const clearAll = () => {
     if (!circ.comps.length) return;
-    commit({ comps: [], wires: [] });
+    commit(c => ({ comps: [], wires: [], w: c.w, h: c.h }));
     setSel(null);
     flash('Board limpo · ctrl+z desfaz');
   };
@@ -375,7 +391,7 @@ export default function Simulator() {
           past.current.push(circRef.current); future.current = [];
           if (c.kind === 'button') setPressed(s => { const n = new Set(s); n.delete(c.id); return n; });
         }
-        const [nx, ny] = clampPos(c.kind, Math.round(bp[0] - d.ox), Math.round(bp[1] - d.oy));
+        const [nx, ny] = clampPos(c.kind, Math.round(bp[0] - d.ox), Math.round(bp[1] - d.oy), boardSize(circRef.current));
         const od = overDock(e.clientX, e.clientY);
         if (nx !== c.x || ny !== c.y) {
           setCircRaw(cur => ({ ...cur, comps: cur.comps.map(k => k.id === d.id ? { ...k, x: nx, y: ny } : k) }));
@@ -390,7 +406,7 @@ export default function Simulator() {
         if (overStage(e.clientX, e.clientY)) {
           const bp = boardPoint(e.clientX, e.clientY);
           const s = SPECS[d.kind];
-          if (bp) pos = clampPos(d.kind, Math.round(bp[0] - s.w / 2), Math.round(bp[1] - s.d / 2));
+          if (bp) pos = clampPos(d.kind, Math.round(bp[0] - s.w / 2), Math.round(bp[1] - s.d / 2), boardSize(circRef.current));
         }
         setDrag({ ...d, moved: true, pos });
       }
@@ -404,7 +420,7 @@ export default function Simulator() {
         const c = circRef.current.comps.find(k => k.id === d.id);
         if (c?.kind === 'button') setPressed(s => { const n = new Set(s); n.delete(c.id); return n; });
         if (d.moved && d.overDock) {
-          setCircRaw(cur => ({ comps: cur.comps.filter(k => k.id !== d.id), wires: cur.wires.filter(w => w.from.c !== d.id && w.to.c !== d.id) }));
+          setCircRaw(cur => ({ ...cur, comps: cur.comps.filter(k => k.id !== d.id), wires: cur.wires.filter(w => w.from.c !== d.id && w.to.c !== d.id) }));
           setSel(null);
           bumpHistory(v => v + 1);
           flash('Peça removida');
@@ -467,15 +483,37 @@ export default function Simulator() {
       if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
       if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
       if (e.key === 'Delete' || e.key === 'Backspace') { if (selRef.current) { e.preventDefault(); removeSel(); } return; }
-      if (e.key === 'Escape') { setDrag(null); setSel(null); }
+      if (e.key === 'Escape') { setDrag(null); setSel(null); return; }
+      // letters flip the switches printed with them (A, B, C...)
+      if (!mod && !e.altKey && !e.repeat && e.key.length === 1) {
+        const i = LETTERS.indexOf(e.key.toLowerCase());
+        const sw = circRef.current.comps.filter(c => c.kind === 'switch')[i];
+        if (i >= 0 && sw) { e.preventDefault(); commit(cur => ({ ...cur, comps: cur.comps.map(k => k.id === sw.id ? { ...k, on: !k.on } : k) })); }
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [redo, removeSel, undo]);
+  }, [commit, redo, removeSel, undo]);
 
   // ---------- derived drawing data ----------
   const sorted = useMemo(() => [...circ.comps].sort((a, b) => depth(a) - depth(b)), [circ.comps]);
-  const wirePaths = useMemo(() => circ.wires.map(w => ({ w, d: routeWire(circ, w), on: !!sim.out[w.from.c]?.[w.from.p] })), [circ, sim]);
+  // a wire whose level changes replays a pulse along its path (iso-glow "flow")
+  const prevOn = useRef<Record<string, boolean>>({});
+  const pulseGen = useRef<Record<string, number>>({});
+  const wirePaths = useMemo(() => circ.wires.map(w => {
+    const on = !!sim.out[w.from.c]?.[w.from.p];
+    const was = prevOn.current[w.id];
+    if (was !== undefined && was !== on) pulseGen.current[w.id] = (pulseGen.current[w.id] ?? 0) + 1;
+    prevOn.current[w.id] = on;
+    return { w, d: routeWire(circ, w), on, gen: pulseGen.current[w.id] ?? 0 };
+  }), [circ, sim]);
+  const leads = useMemo(() => circ.comps.flatMap(c => leadPaths(c, partState(sim, c, pressed))), [circ.comps, sim, pressed]);
+  const switches = circ.comps.filter(c => c.kind === 'switch');
+  const tagOf = (c: Comp) => {
+    if (c.kind !== 'switch') return undefined;
+    const i = switches.indexOf(c);
+    return i >= 0 && i < LETTERS.length ? LETTERS[i].toUpperCase() : undefined;
+  };
 
   const wiring = drag?.type === 'wire' ? drag : null;
   const ghost = drag?.type === 'new' && drag.pos ? newComp(drag.kind, drag.pos[0], drag.pos[1]) : null;
@@ -494,40 +532,57 @@ export default function Simulator() {
   }
 
   // readout
-  const leds = circ.comps.filter(c => c.kind === 'led');
-  const lit = leds.filter(c => sim.inp[c.id]?.[0]).length;
+  const ledComps = circ.comps.filter(c => c.kind === 'led');
+  const lit = ledComps.filter(c => sim.inp[c.id]?.[0]).length;
   const hexes = circ.comps.filter(c => c.kind === 'seg7').map(c => hexValue(sim.inp[c.id] ?? [0, 0, 0, 0]).toString(16).toUpperCase());
+  const anyLit = lit > 0 || circ.comps.some(c => c.kind === 'seg7' && sim.inp[c.id]?.some(Boolean));
   const readout = [
-    `${circ.comps.length} peças`,
-    `${circ.wires.length} fios`,
-    leds.length ? `${lit}/${leds.length} leds` : null,
+    switches.length ? switches.slice(0, 8).map(c => `${tagOf(c)?.toLowerCase()}${c.on ? 1 : 0}`).join(' ') : null,
+    ledComps.length ? `leds ${lit}/${ledComps.length}` : null,
     hexes.length ? `hex ${hexes.join(' ')}` : null,
+    !switches.length && !ledComps.length && !hexes.length ? `${circ.comps.length} peças · ${circ.wires.length} fios` : null,
     sim.unstable ? 'oscilando' : null,
     paused ? 'pausado' : null,
   ].filter(Boolean).join(' · ');
 
   const selComp = sel?.type === 'comp' ? circ.comps.find(c => c.id === sel.id) : null;
+  const keysHint = switches.length
+    ? `aperte ${switches.slice(0, 4).map(tagOf).join(' · ')}${switches.length > 4 ? ' …' : ''} ou clique nas chaves`
+    : 'arraste peças do menu · puxe fios entre os pinos';
   const instruction = wiring?.sticky
     ? 'toque em outro pino para ligar · esc cancela'
     : selComp
       ? hintFor(selComp.kind)
       : sel?.type === 'wire'
         ? 'clique de novo no fio para mudar a dobra · delete apaga'
-        : 'arraste peças do menu · puxe fios entre os pinos';
+        : keysHint;
 
-  const plateCorners = { x: -1.5, y: -1.5, w: BOARD_W + 3, d: BOARD_H + 3 };
+  const bs = boardSize(circ);
+  const need = minBoard(circ);
+  const TOP0 = pr.TOP(0, 0, 0);
+  const BW = bs.w + 3, BD = bs.h + 4; // board (with power rails) around the usable grid
+
+  const setBoard = (w: number, h: number) => {
+    commit(c => ({ ...c, w, h }));
+    requestAnimationFrame(() => fitTo({ ...circRef.current, w, h }, pr, sizeRef.current, true));
+  };
 
   return (
     <TooltipProvider delayDuration={300}>
-      <main className="flex h-dvh flex-col gap-3 p-3 sm:p-4">
+      <main className="flex h-dvh gap-3 p-3 sm:p-4">
+        <LearnPanel open={learnOpen} onClose={() => setLearnOpen(false)} onAdd={k => addAt(k, null)} />
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
         <figure className="relative m-0 flex min-h-0 flex-1 flex-col rounded-[22px] border border-edge bg-panel">
           {/* top caption + toolbar */}
           <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 pt-3 sm:px-6 sm:pt-4">
-            <div className="flex items-baseline gap-4 text-[13px] tracking-[0.14em] uppercase text-ink">
-              <span className="normal-case tracking-[0.05em] text-ink-hi">Fig 1</span>
+            <div className="flex items-center gap-3 text-[13px] tracking-[0.14em] text-ink-hi uppercase">
+              <span className="inline-block size-1.5 rounded-full" style={{ background: 'var(--glow)', boxShadow: '0 0 8px var(--glow)' }} />
               <span>Board lógica</span>
             </div>
             <div className="flex flex-wrap items-center gap-1">
+              <Button variant={learnOpen ? 'secondary' : 'ghost'} size="sm" className="text-ink hover:text-ink-hi" onClick={() => setLearnOpen(o => !o)}>
+                <GraduationCap />Aprender
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="text-ink hover:text-ink-hi"><BookOpen />Exemplos</Button>
@@ -540,9 +595,30 @@ export default function Simulator() {
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
+              <DropdownMenu>
+                <Tip label="Tamanho do board">
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="text-ink hover:text-ink-hi"><Grid3x3 />{bs.w}×{bs.h}</Button>
+                  </DropdownMenuTrigger>
+                </Tip>
+                <DropdownMenuContent align="end" className="font-mono">
+                  <DropdownMenuLabel className="text-xs uppercase tracking-widest text-ink">Tamanho do board</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {BOARD_SIZES.map(b => (
+                    <DropdownMenuItem key={b.name} disabled={b.w < need.w || b.h < need.h} onSelect={() => setBoard(b.w, b.h)}>
+                      <span className="flex-1">{b.name}</span>
+                      <span className={cn('text-xs', b.w === bs.w && b.h === bs.h ? 'text-glow' : 'text-ink')}>{b.w}×{b.h}</span>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={e => { e.preventDefault(); setBoard(bs.w + 8, bs.h + 5); }} disabled={bs.w + 8 > 256}>Aumentar +8×5</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={e => { e.preventDefault(); setBoard(Math.max(need.w, 16, bs.w - 8), Math.max(need.h, 10, bs.h - 5)); }}
+                    disabled={bs.w - 8 < Math.max(need.w, 16) && bs.h - 5 < Math.max(need.h, 10)}>Diminuir −8×5</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <ToggleGroup type="single" size="sm" variant="outline" value={iso ? 'iso' : '2d'}
-                onValueChange={v => { if (!v) return; const nIso = v === 'iso'; setIso(nIso); requestAnimationFrame(() => fitTo(circRef.current, makeProj(nIso, K))); }}>
-                <ToggleGroupItem value="iso" className="px-2.5 text-xs">ISO</ToggleGroupItem>
+                onValueChange={v => { if (!v) return; const nIso = v === 'iso'; setIso(nIso); requestAnimationFrame(() => fitTo(circRef.current, makeProj(nIso, K), sizeRef.current, true)); }}>
+                <ToggleGroupItem value="iso" className="px-2.5 text-xs">3D</ToggleGroupItem>
                 <ToggleGroupItem value="2d" className="px-2.5 text-xs">2D</ToggleGroupItem>
               </ToggleGroup>
               <Separator orientation="vertical" className="mx-1 !h-5" />
@@ -551,58 +627,116 @@ export default function Simulator() {
               <Tip label={paused ? 'Retomar clocks' : 'Pausar clocks'}><Button variant="ghost" size="icon-sm" onClick={() => setPaused(p => !p)}>{paused ? <Play /> : <Pause />}</Button></Tip>
               <Tip label="Apagar seleção (delete)"><Button variant="ghost" size="icon-sm" onClick={removeSel} disabled={!sel}><Trash2 /></Button></Tip>
               <Tip label="Limpar board"><Button variant="ghost" size="icon-sm" onClick={clearAll} disabled={!circ.comps.length}><Eraser /></Button></Tip>
-              <Separator orientation="vertical" className="mx-1 !h-5" />
               <Tip label="Copiar link do circuito"><Button variant="ghost" size="icon-sm" onClick={share}><Link2 /></Button></Tip>
-              <Tip label="Cor do brilho">
-                <Button variant="ghost" size="icon-sm" asChild>
-                  <label className="relative cursor-pointer">
-                    <Palette style={{ color: 'var(--glow)' }} />
-                    <input type="color" className="absolute inset-0 cursor-pointer opacity-0" aria-label="Cor do brilho"
-                      value={glow ?? (dark ? '#ffb547' : '#ff8a1f')} onChange={e => setGlow(e.target.value)} />
-                  </label>
-                </Button>
-              </Tip>
-              <Tip label={dark ? 'Tema claro' : 'Tema escuro'}><Button variant="ghost" size="icon-sm" onClick={() => setDark(d => !d)}>{dark ? <Sun /> : <Moon />}</Button></Tip>
+              <Separator orientation="vertical" className="mx-1 !h-5" />
+              <div role="radiogroup" aria-label="Cor do brilho" className="flex items-center gap-0.5 rounded-full border border-edge p-0.5">
+                {GLOWS.map(g => (
+                  <button key={g.id} type="button" role="radio" aria-checked={glow === g.id} aria-label={g.name} title={g.name}
+                    onClick={() => setGlow(g.id)}
+                    className={cn('grid size-6 place-items-center rounded-full border border-transparent', glow === g.id && 'border-line')}
+                    style={glow === g.id ? { borderColor: 'var(--line)' } : undefined}>
+                    <i className="block size-2.5 rounded-full border transition-transform hover:scale-110"
+                      style={{ background: g.c, borderColor: 'var(--line)', boxShadow: glow === g.id ? `0 0 10px 1px ${g.c}` : undefined }} />
+                  </button>
+                ))}
+              </div>
             </div>
           </header>
 
           {/* the board */}
-          <div ref={stageRef} data-stage className="relative min-h-0 flex-1 overflow-hidden">
+          <div ref={stageRef} data-stage className={cn('stage-glow relative min-h-0 flex-1 overflow-hidden', anyLit && 'on')}>
             <svg ref={svgRef} className="board-svg absolute inset-0 h-full w-full outline-none" viewBox={viewBox}
               role="img" tabIndex={0}
               aria-label="Board lógica: arraste peças do menu para o board, puxe fios de um pino de saída para um de entrada e clique nas chaves para ligar."
               onPointerDown={onSvgPointerDown}
               style={{ cursor: drag?.type === 'pan' ? 'grabbing' : wiring ? 'crosshair' : 'default' }}>
               <defs>
-                <pattern id="grid" width={1} height={1} patternUnits="userSpaceOnUse">
-                  <circle className="gridpat" cx={0} cy={0} r={0.055} />
+                <pattern id="holes" width={0.5} height={0.5} patternUnits="userSpaceOnUse" patternTransform="translate(-0.25 -0.25)">
+                  <rect className="hole" x={0.19} y={0.19} width={0.12} height={0.12} />
                 </pattern>
-                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="3" />
+                <filter id="glow" filterUnits="userSpaceOnUse" x="-20000" y="-20000" width="60000" height="60000">
+                  <feGaussianBlur stdDeviation="4" result="b" />
+                  <feMerge><feMergeNode in="b" /><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+                </filter>
+                <filter id="soft" filterUnits="userSpaceOnUse" x="-20000" y="-20000" width="60000" height="60000">
+                  <feGaussianBlur stdDeviation="2.2" result="b" />
+                  <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+                </filter>
+                {/* the same glows for shapes drawn inside a board-plane (cell unit) transform */}
+                <filter id="soft-p" filterUnits="userSpaceOnUse" x="-1000" y="-1000" width="3000" height="3000">
+                  <feGaussianBlur stdDeviation="0.1" result="b" />
+                  <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+                </filter>
+                <filter id="bloom-p" filterUnits="userSpaceOnUse" x="-1000" y="-1000" width="3000" height="3000">
+                  <feGaussianBlur stdDeviation="0.45" />
                 </filter>
               </defs>
 
-              {/* plate */}
-              <Box pr={pr} x={plateCorners.x} y={plateCorners.y} z={-0.8} w={plateCorners.w} d={plateCorners.d} h={0.8} r={1} cls="plate" />
-
-              {/* board plane: grid, wires, leads */}
-              <g ref={boardRef} transform={pr.TOP(0, 0, 0)}>
-                <rect x={-0.5} y={-0.5} width={BOARD_W + 1} height={BOARD_H + 1} fill="url(#grid)" />
-                <text className="plabel" x={0} y={BOARD_H + 1.05} style={{ fontSize: 0.5, letterSpacing: 0.12 }}>BOARD LÓGICA · {BOARD_W}×{BOARD_H}</text>
+              {/* plate: the base the breadboard is screwed to */}
+              <Box pr={pr} x={-2.6} y={-2.6} z={-0.95} w={bs.w + 5.2} d={bs.h + 6.2} h={0.45} r={1.1} cls="plate" />
+              <g transform={pr.TOP(-2.6, -2.6, -0.5)}>
+                <rect className="detail" x={0.3} y={0.3} width={bs.w + 4.6} height={bs.h + 5.6} rx={0.8} />
+                {[[0.55, 0.55], [bs.w + 4.65, 0.55], [0.55, bs.h + 5.65], [bs.w + 4.65, bs.h + 5.65]].map(([x, y], i) => (
+                  <g key={i}>
+                    <circle className="face recess" cx={x} cy={y} r={0.17} />
+                    <line className="detail" x1={x - 0.1} y1={y} x2={x + 0.1} y2={y} />
+                  </g>
+                ))}
+                <text className="board-label" x={bs.w + 4.1} y={bs.h + 5.95} textAnchor="end" style={{ fontSize: 0.32, letterSpacing: 0.06 }}>
+                  BOARD LÓGICA · {bs.w}×{bs.h}
+                </text>
               </g>
-              <g filter="url(#glow)">
-                <g transform={pr.TOP(0, 0, 0)}>
-                  {wirePaths.filter(p => p.on).map(({ w, d }) => <path key={w.id} className="wire-halo" d={d} />)}
+
+              {/* breadboard with power rails */}
+              <Box pr={pr} x={-1.5} y={-2} z={-0.5} w={BW} d={BD} h={0.5} r={0.35} />
+              {pr.iso && (
+                <g transform={pr.FRONT(-1.5, bs.h + 2, 0)}>
+                  {Array.from({ length: Math.max(0, Math.floor((BW - 2) / 0.5)) }, (_, i) => (
+                    <line key={i} className="detail" x1={1 + i * 0.5} y1={0.14} x2={1 + i * 0.5} y2={0.36} />
+                  ))}
+                </g>
+              )}
+              <g transform={pr.TOP(-1.5, -2, 0)}>
+                <rect className="detail" x={0.2} y={0.2} width={BW - 0.4} height={BD - 0.4} rx={0.22} />
+                {[0.45, BD - 1.45].map((ry, i) => (
+                  <g key={i}>
+                    <line className="detail" x1={0.7} y1={ry} x2={BW - 0.7} y2={ry} />
+                    <line className="detail" x1={0.7} y1={ry + 1} x2={BW - 0.7} y2={ry + 1} />
+                    <text className="board-label" x={0.3} y={ry + 0.66} style={{ fontSize: 0.42 }}>{i ? '−' : '+'}</text>
+                    <text className="board-label" x={BW - 0.62} y={ry + 0.66} style={{ fontSize: 0.42 }}>{i ? '−' : '+'}</text>
+                  </g>
+                ))}
+              </g>
+              <g ref={boardRef} transform={TOP0}>
+                <rect x={0.8 - 1.5} y={-1.55 + 0.25} width={BW - 1.6} height={0.5} fill="url(#holes)" />
+                <rect x={0.8 - 1.5} y={bs.h + 1.05 - 0.25} width={BW - 1.6} height={0.5} fill="url(#holes)" />
+                <rect x={-1.25} y={-0.25} width={bs.w + 2.5} height={bs.h + 0.5} fill="url(#holes)" />
+              </g>
+
+              {/* wires: cold ones flat, live ones with the soft glow */}
+              <g transform={TOP0}>
+                {leads.filter(l => !l.on).map(l => <path key={l.key} className="wire" d={l.d} />)}
+                {wirePaths.filter(p => !p.on).map(({ w, d }) => (
+                  <g key={w.id}><path className="wire-under" d={d} /><path className="wire" d={d} /></g>
+                ))}
+              </g>
+              <g filter="url(#soft)">
+                <g transform={TOP0}>
+                  {leads.filter(l => l.on).map(l => <path key={l.key} className="wire hot" d={l.d} />)}
+                  {wirePaths.filter(p => p.on).map(({ w, d }) => (
+                    <g key={w.id}><path className="wire-under" d={d} /><path className="wire hot" d={d} /></g>
+                  ))}
                 </g>
               </g>
-              <g transform={pr.TOP(0, 0, 0)}>
-                {wirePaths.map(({ w, d, on }) => (
+              <g transform={TOP0}>
+                {wirePaths.map(({ w, d, gen }) => gen > 0 && <path key={`${w.id}:${gen}`} className="pulse" pathLength={1000} d={d} />)}
+                {wirePaths.map(({ w, d }) => (
                   <g key={w.id} data-wire={w.id}>
-                    <path className={cn('wire', on && 'on', sel?.type === 'wire' && sel.id === w.id && 'sel')} d={d} />
+                    {sel?.type === 'wire' && sel.id === w.id && <path className="wire sel" d={d} />}
                     <path className="wire-hit" d={d} />
                   </g>
                 ))}
-                {circ.comps.map(c => <Leads key={c.id} c={c} st={partState(sim, c, pressed)} />)}
+                {circ.comps.map(c => <Pads key={c.id} c={c} st={partState(sim, c, pressed)} />)}
                 {tempPath && <path className="wire-temp" d={tempPath} />}
               </g>
 
@@ -611,18 +745,21 @@ export default function Simulator() {
                 <g key={c.id} data-comp={c.id}
                   className={cn('part', (c.kind === 'switch' || c.kind === 'button') && 'press', sel?.type === 'comp' && sel.id === c.id && 'sel')}
                   style={movingToDock && drag.id === c.id ? { opacity: 0.35 } : undefined}>
-                  <Part pr={pr} c={c} st={partState(sim, c, pressed)} />
+                  <Part pr={pr} c={c} st={partState(sim, c, pressed)} tag={tagOf(c)} />
                 </g>
               ))}
               {ghost && (
                 <g className={cn('part ghost', ghostBad && 'bad')}>
-                  <g transform={pr.TOP(0, 0, 0)}><Leads c={ghost} st={{ ins: [], outs: [] }} /></g>
+                  <g transform={TOP0}>
+                    {leadPaths(ghost, { ins: [], outs: [] }).map(l => <path key={l.key} className="wire" d={l.d} />)}
+                    <Pads c={ghost} st={{ ins: [], outs: [] }} />
+                  </g>
                   <Part pr={pr} c={ghost} st={{ ins: [], outs: [] }} />
                 </g>
               )}
 
               {/* pin hotspots on top so they stay reachable */}
-              <g transform={pr.TOP(0, 0, 0)}>
+              <g transform={TOP0}>
                 {circ.comps.flatMap(c => {
                   const s = SPECS[c.kind];
                   const mk = (side: Side, i: number) => {
@@ -631,7 +768,7 @@ export default function Simulator() {
                     const cand = wiring && !isSrc && wiring.from.side !== side;
                     return (
                       <circle key={`${c.id}${side}${i}`} data-pin={`${c.id}:${side}:${i}`}
-                        className={cn('hot', cand && 'cand', isSrc && 'src')} cx={px} cy={py} r={0.42}>
+                        className={cn('hot-pin', cand && 'cand', isSrc && 'src')} cx={px} cy={py} r={0.42}>
                         <title>{pinTitle(c.kind, side, i)}</title>
                       </circle>
                     );
@@ -660,7 +797,7 @@ export default function Simulator() {
             <div className="absolute right-3 bottom-3 flex flex-col gap-1 rounded-lg border border-edge bg-panel/90 p-1">
               <Tip label="Aproximar" side="left"><Button variant="ghost" size="icon-sm" onClick={() => zoomAt(1.25)}><ZoomIn /></Button></Tip>
               <Tip label="Afastar" side="left"><Button variant="ghost" size="icon-sm" onClick={() => zoomAt(0.8)}><ZoomOut /></Button></Tip>
-              <Tip label="Enquadrar circuito" side="left"><Button variant="ghost" size="icon-sm" onClick={() => fitTo(circ, pr)}><Maximize /></Button></Tip>
+              <Tip label="Ver o board inteiro" side="left"><Button variant="ghost" size="icon-sm" onClick={() => fitTo(circ, pr, size, true)}><Maximize /></Button></Tip>
             </div>
           </div>
 
@@ -686,6 +823,7 @@ export default function Simulator() {
             </button>
           ))}
         </nav>
+        </div>
       </main>
     </TooltipProvider>
   );
@@ -718,27 +856,5 @@ function pinTitle(kind: Kind, side: Side, i: number) {
   return `${side === 'in' ? 'entrada' : 'saída'}${names ? ' ' + names[i] : ''}`;
 }
 
-const iconProj = makeProj(true, K);
-function PartIcon({ kind }: { kind: Kind }) {
-  const c = useMemo(() => {
-    const k = newComp(kind, 0, 0);
-    k.id = 'icon-' + kind;
-    if (kind === 'switch') k.on = true;
-    return k;
-  }, [kind]);
-  const s = SPECS[kind];
-  const pts = [[-0.9, 0], [s.w + 0.9, 0], [-0.9, s.d], [s.w + 0.9, s.d]]
-    .flatMap(([x, y]) => [iconProj.P(x, y, 0), iconProj.P(x, y, 1.1)]);
-  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
-  const x0 = Math.min(...xs), y0 = Math.min(...ys), w = Math.max(...xs) - x0, h = Math.max(...ys) - y0;
-  const on = kind === 'switch' || kind === 'const';
-  const st: PartState = { ins: kind === 'led' ? [1] : s.ins.map(() => 0), outs: s.outs.map(() => (on ? 1 : 0)) };
-  return (
-    <svg viewBox={`${x0 - 2} ${y0 - 2} ${w + 4} ${h + 4}`} className="board-svg pointer-events-none h-[50px] w-[80px]" aria-hidden>
-      <g transform={iconProj.TOP(0, 0, 0)}><Leads c={c} st={st} /></g>
-      <Part pr={iconProj} c={c} st={st} />
-    </svg>
-  );
-}
 
 export type { Sel };

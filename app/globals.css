@@ -5,11 +5,12 @@
 
 /* ---------- palette: iso-glow look (two greys for linework, one live colour, one glow) ---------- */
 :root {
-  color-scheme: light;
-  --bg: #e9eaea; --panel: #f6f6f5; --edge: #d6d8d8;
-  --line: #8e9397; --detail: #c3c6c8; --body: #ececeb; --deck: #f3f3f2; --plate: #e4e5e4;
-  --ink: #6a6f73; --ink-hi: #16181a; --live: #0c0d0e; --glass: #dfe1e1;
-  --glow: #ff8a1f;
+  color-scheme: dark;
+  --bg: #0c0d0e; --panel: #141516; --edge: #222426;
+  --line: #3d4144; --detail: #2b2e30; --body: #17181a; --deck: #1b1d1f; --plate: #111213;
+  --ink: #868b8f; --ink-hi: #e6e8e9; --live: #f4f5f5;
+  --glass: #0f1011; --glass-on: #1a1410; --recess: #0e0f10;
+  --glow: #ff7a1a; --glow-hi: #ffb070;
   --mono: "DM Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   --radius: 0.6rem;
@@ -21,29 +22,16 @@
   --popover-foreground: var(--ink-hi);
   --primary: var(--ink-hi);
   --primary-foreground: var(--panel);
-  --secondary: #e4e5e4;
+  --secondary: #1d1f21;
   --secondary-foreground: var(--ink-hi);
-  --muted: #e4e5e4;
+  --muted: #1d1f21;
   --muted-foreground: var(--ink);
-  --accent: #e2e3e3;
+  --accent: #222527;
   --accent-foreground: var(--ink-hi);
-  --destructive: #d8463b;
+  --destructive: #ff5a4f;
   --border: var(--edge);
   --input: var(--edge);
   --ring: var(--line);
-}
-
-.dark {
-  color-scheme: dark;
-  --bg: #0c0d0e; --panel: #141516; --edge: #222426;
-  --line: #3d4144; --detail: #2b2e30; --body: #17181a; --deck: #1b1d1f; --plate: #111213;
-  --ink: #868b8f; --ink-hi: #e6e8e9; --live: #f4f5f5; --glass: #0b0c0c;
-  --glow: #ffb547;
-
-  --secondary: #1d1f21;
-  --muted: #1d1f21;
-  --accent: #222527;
-  --destructive: #ff5a4f;
 }
 
 @theme inline {
@@ -84,67 +72,70 @@
   body { @apply bg-background text-foreground; font-family: var(--mono); overscroll-behavior: none; }
 }
 
-/* ---------- the board drawing ---------- */
+/* ---------- the board drawing (iso-glow figure vocabulary) ---------- */
 .board-svg { touch-action: none; user-select: none; -webkit-user-select: none; display: block; }
 .board-svg text { font-family: var(--mono); }
 
 .face { fill: var(--body); stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
 .face.top { fill: var(--deck); }
+.face.recess { fill: var(--recess); }
 .face.plate { fill: var(--plate); }
 .face.plate.top { fill: var(--panel); }
-.face.lit { stroke: var(--glow); }
-.face.top.lit { fill: color-mix(in srgb, var(--glow) 22%, var(--deck)); }
 .detail { fill: none; stroke: var(--detail); stroke-width: 1; vector-effect: non-scaling-stroke; }
-.glass { fill: var(--glass); stroke: var(--detail); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.hole { fill: var(--detail); }
+.chip .face { fill: var(--recess); }
+.chip .face.top { fill: var(--glass); }
+.chip-txt { fill: var(--ink); pointer-events: none; }
+.chip-txt.on { fill: var(--glow-hi); }
+
+.lit .face { fill: var(--glow); stroke: var(--glow-hi); }
+.lit .face.top { fill: var(--glow-hi); }
 
 .plabel { fill: var(--ink); font-size: 0.3px; letter-spacing: 0.02px; pointer-events: none; }
-.plabel.mid { font-size: 0.48px; }
-.plabel.big { font-size: 0.42px; }
-.plabel.huge { font-size: 1.05px; }
-.plabel.hi { fill: var(--ink-hi); }
-.glowtxt { fill: var(--glow) !important; filter: drop-shadow(0 0 3px var(--glow)); }
+.plabel.tiny { font-size: 0.22px; }
+.plabel.tag { font-size: 0.42px; fill: var(--ink-hi); }
+.plabel.live { fill: var(--glow-hi); font-size: 0.7px; }
+.plabel.tiny.live { font-size: 0.22px; }
+.board-label { fill: var(--ink); pointer-events: none; }
 
-.trace, .lead { fill: none; stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; }
-.trace.on, .on > .lead { stroke: var(--glow); stroke-width: 1.6; filter: drop-shadow(0 0 2px var(--glow)); }
-.pad { fill: var(--deck); stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
-.on > .pad { fill: var(--glow); stroke: var(--glow); }
+.trace { fill: none; stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; }
+.trace.on { stroke: var(--glow); }
+.pad { fill: var(--recess); stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.pad.hot { fill: var(--glow-hi); stroke: var(--glow); }
 
-.sym path, .sym circle { fill: var(--deck); stroke: var(--line); stroke-width: 1.2; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
-.sym .open { fill: none; }
-.sym.on path, .sym.on circle { stroke: var(--glow); filter: drop-shadow(0 0 2.5px var(--glow)); }
+.glass { fill: var(--glass); stroke: var(--detail); stroke-width: 1; vector-effect: non-scaling-stroke; transition: fill .3s, stroke .3s; }
+.glass.hot { fill: var(--glass-on); stroke: var(--glow); }
+.halo { fill: var(--glow); opacity: .22; pointer-events: none; }
+.seg { fill: var(--detail); opacity: .5; }
+.seg.on { fill: var(--glow-hi); opacity: 1; }
 
-.dot { fill: var(--deck); stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
-.dot.on { fill: var(--glow); stroke: var(--glow); filter: drop-shadow(0 0 4px var(--glow)); }
+.ledg .face { fill: var(--body); }
+.ledg .face.top { fill: var(--deck); }
+.ledg.hot .face { fill: var(--led); stroke: var(--led-hi); }
+.ledg.hot .face.top { fill: var(--led-hi); }
 
-.seg { fill: var(--detail); opacity: 0.55; }
-.seg.on { fill: var(--glow); opacity: 1; filter: drop-shadow(0 0 3px var(--glow)); }
-
-.lens { fill: color-mix(in srgb, var(--led) 18%, var(--body)); stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
-.lens.side { fill: color-mix(in srgb, var(--led) 12%, var(--body)); }
-.lens.lit { fill: var(--led); stroke: color-mix(in srgb, var(--led) 70%, white); }
-.lens.side.lit { fill: color-mix(in srgb, var(--led) 75%, black); }
-.halo { fill: var(--led); opacity: 0.45; filter: blur(9px); pointer-events: none; }
-.shine { fill: #fff; opacity: 0.35; pointer-events: none; }
-
-.wire { fill: none; stroke: var(--line); stroke-width: 1.2; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
-.wire.on { stroke: var(--glow); stroke-width: 1.8; }
-.wire-halo { fill: none; stroke: var(--glow); stroke-width: 7; opacity: 0.55; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
+.wire { fill: none; stroke: var(--line); stroke-width: 1.6; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
+.wire.hot { stroke: var(--glow); }
+.wire-under { fill: none; stroke: var(--deck); stroke-width: 3.2; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
 .wire.sel { stroke: var(--live); stroke-dasharray: 5 4; stroke-width: 2; }
 .wire-hit { fill: none; stroke: transparent; stroke-width: 12; vector-effect: non-scaling-stroke; cursor: pointer; pointer-events: stroke; }
 .wire-temp { fill: none; stroke: var(--live); stroke-width: 1.5; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; pointer-events: none; }
+.pulse { fill: none; stroke: var(--glow-hi); stroke-width: 2.6; stroke-linecap: round; vector-effect: non-scaling-stroke;
+  stroke-dasharray: 70 1200; stroke-dashoffset: 70; opacity: 0; pointer-events: none; animation: flow .55s linear; }
+@keyframes flow { 0% { stroke-dashoffset: 70; opacity: 1; } 90% { opacity: 1; } 100% { stroke-dashoffset: -1000; opacity: 0; } }
 
 .part { cursor: grab; }
 .part.press { cursor: pointer; }
-.part:hover .face.top:not(.lit) { stroke: var(--ink); }
+.part:hover .face.top { stroke: var(--ink); }
 .part.sel .face { stroke: var(--live); }
 .part.ghost { opacity: 0.55; pointer-events: none; }
 .part.ghost.bad { opacity: 0.25; }
-.cap { transition: transform 60ms ease-out; }
 
-.hot { fill: transparent; stroke: none; cursor: crosshair; }
-.hot:hover, .hot.cand { fill: var(--live); fill-opacity: 0.18; stroke: var(--live); stroke-width: 1; vector-effect: non-scaling-stroke; }
-.hot.src { fill: var(--glow); fill-opacity: 0.35; }
+.hot-pin { fill: transparent; stroke: none; cursor: crosshair; }
+.hot-pin:hover, .hot-pin.cand { fill: var(--live); fill-opacity: 0.18; stroke: var(--live); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.hot-pin.src { fill: var(--glow); fill-opacity: 0.35; }
 
-.gridpat { fill: var(--detail); }
+.stage-glow { transition: background .5s; background: radial-gradient(ellipse 50% 45% at 50% 52%, transparent, transparent); }
+.stage-glow.on { background: radial-gradient(ellipse 50% 45% at 50% 52%, color-mix(in srgb, var(--glow) 10%, transparent), transparent 72%); }
 
-@media (prefers-reduced-motion: reduce) { .cap { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } .glass, .stage-glow { transition: none; } }

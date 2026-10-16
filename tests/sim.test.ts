@@ -24,7 +24,7 @@ test('half adder truth table', () => {
 test('SR latch holds its state', () => {
   const c = ex('sr-latch');
   const [s, r] = byKind(c, 'switch');
-  const q = c.comps.find(x => x.kind === 'led' && x.color === '#4fb4ff')!;
+  const q = c.comps.find(x => x.id === 'q')!;
   let res = run(c);
   assert.equal(res.unstable, false);
   s.on = true; res = run(c, {}, {}); 
