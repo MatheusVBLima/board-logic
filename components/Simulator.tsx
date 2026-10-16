@@ -22,6 +22,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
+import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { cn } from '@/lib/utils';
 
 const K = 20;
@@ -86,6 +87,8 @@ export default function Simulator() {
   const [iso, setIso] = useState(true);
   const [glow, setGlow] = useState<string>(GLOWS[0].id);
   const [learnOpen, setLearnOpen] = useState(false);
+  const [partsOpen, setPartsOpen] = useState(false);   // mobile parts drawer
+  const swipeY = useRef<number | null>(null);
   const [paused, setPaused] = useState(false);
   const [pressed, setPressed] = useState<Set<string>>(() => new Set());
   const [drag, setDragState] = useState<Drag | null>(null);
@@ -176,7 +179,8 @@ export default function Simulator() {
   useEffect(() => {
     if (measured.current || !loaded.current || (size.w === 1000 && size.h === 600)) return;
     measured.current = true;
-    fitTo(circRef.current, pr, size, true);
+    // narrow screens frame the circuit itself; the whole board would be too small to touch
+    fitTo(circRef.current, pr, size, size.w >= 640);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [size]);
 
@@ -402,6 +406,7 @@ export default function Simulator() {
         if (bp) setDrag({ ...d, cur: bp });
       } else if (d.type === 'new') {
         if (!d.moved && !far) return;
+        if (!d.moved) setPartsOpen(false); // dragging out of the mobile drawer: get it out of the way
         let pos: [number, number] | null = null;
         if (overStage(e.clientX, e.clientY)) {
           const bp = boardPoint(e.clientX, e.clientY);
@@ -448,6 +453,7 @@ export default function Simulator() {
         return;
       }
       if (d.type === 'new') {
+        setPartsOpen(false);
         if (!d.moved) addAt(d.kind, null);
         else if (d.pos) {
           const pos = overlaps(circRef.current, d.kind, d.pos[0], d.pos[1]) ? freeSpot(circRef.current, d.kind, d.pos[0], d.pos[1]) : d.pos;
@@ -546,7 +552,9 @@ export default function Simulator() {
   ].filter(Boolean).join(' · ');
 
   const selComp = sel?.type === 'comp' ? circ.comps.find(c => c.id === sel.id) : null;
-  const keysHint = switches.length
+  const keysHint = switches.length && size.w < 640
+    ? 'toque nas chaves para ligar · arraste para mover'
+    : switches.length
     ? `aperte ${switches.slice(0, 4).map(tagOf).join(' · ')}${switches.length > 4 ? ' …' : ''} ou clique nas chaves`
     : 'arraste peças do menu · puxe fios entre os pinos';
   const instruction = wiring?.sticky
@@ -581,11 +589,11 @@ export default function Simulator() {
             </div>
             <div className="flex flex-wrap items-center gap-1">
               <Button variant={learnOpen ? 'secondary' : 'ghost'} size="sm" className="text-ink hover:text-ink-hi" onClick={() => setLearnOpen(o => !o)}>
-                <GraduationCap />Aprender
+                <GraduationCap /><span className="hidden sm:inline">Aprender</span>
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-ink hover:text-ink-hi"><BookOpen />Exemplos</Button>
+                  <Button variant="ghost" size="sm" className="text-ink hover:text-ink-hi"><BookOpen /><span className="hidden sm:inline">Exemplos</span></Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="font-mono">
                   <DropdownMenuLabel className="text-xs uppercase tracking-widest text-ink">Circuitos prontos</DropdownMenuLabel>
@@ -628,18 +636,8 @@ export default function Simulator() {
               <Tip label="Apagar seleção (delete)"><Button variant="ghost" size="icon-sm" onClick={removeSel} disabled={!sel}><Trash2 /></Button></Tip>
               <Tip label="Limpar board"><Button variant="ghost" size="icon-sm" onClick={clearAll} disabled={!circ.comps.length}><Eraser /></Button></Tip>
               <Tip label="Copiar link do circuito"><Button variant="ghost" size="icon-sm" onClick={share}><Link2 /></Button></Tip>
-              <Separator orientation="vertical" className="mx-1 !h-5" />
-              <div role="radiogroup" aria-label="Cor do brilho" className="flex items-center gap-0.5 rounded-full border border-edge p-0.5">
-                {GLOWS.map(g => (
-                  <button key={g.id} type="button" role="radio" aria-checked={glow === g.id} aria-label={g.name} title={g.name}
-                    onClick={() => setGlow(g.id)}
-                    className={cn('grid size-6 place-items-center rounded-full border border-transparent', glow === g.id && 'border-line')}
-                    style={glow === g.id ? { borderColor: 'var(--line)' } : undefined}>
-                    <i className="block size-2.5 rounded-full border transition-transform hover:scale-110"
-                      style={{ background: g.c, borderColor: 'var(--line)', boxShadow: glow === g.id ? `0 0 10px 1px ${g.c}` : undefined }} />
-                  </button>
-                ))}
-              </div>
+              <Separator orientation="vertical" className="mx-1 !h-5 max-md:hidden" />
+              <GlowPicker glow={glow} setGlow={setGlow} className="max-md:hidden" />
             </div>
           </header>
 
@@ -810,7 +808,7 @@ export default function Simulator() {
 
         {/* element dock */}
         <nav data-dock aria-label="Peças"
-          className={cn('flex shrink-0 gap-2 overflow-x-auto rounded-[18px] border border-edge bg-panel p-2 transition-colors',
+          className={cn('hidden shrink-0 gap-2 md:flex overflow-x-auto rounded-[18px] border border-edge bg-panel p-2 transition-colors',
             movingToDock && 'border-destructive bg-destructive/10')}
           style={{ touchAction: 'pan-x' }}>
           {PALETTE.map(k => (
@@ -823,9 +821,60 @@ export default function Simulator() {
             </button>
           ))}
         </nav>
+
+        {/* mobile: the dock is a drawer pulled up from this handle */}
+        <button type="button" data-dock aria-label="Abrir menu de peças"
+          className={cn('flex shrink-0 flex-col items-center gap-1.5 rounded-[18px] border border-edge bg-panel px-4 pt-2 pb-2.5 text-[11px] tracking-[0.12em] text-ink uppercase transition-colors md:hidden',
+            movingToDock && 'border-destructive bg-destructive/10 text-ink-hi')}
+          style={{ touchAction: 'none' }}
+          onPointerDown={e => { swipeY.current = e.clientY; }}
+          onPointerMove={e => { if (swipeY.current !== null && swipeY.current - e.clientY > 12) { swipeY.current = null; setPartsOpen(true); } }}
+          onPointerUp={() => { if (swipeY.current !== null) setPartsOpen(true); swipeY.current = null; }}
+          onPointerCancel={() => { swipeY.current = null; }}>
+          <span className="h-1.5 w-12 rounded-full bg-muted" style={{ background: 'var(--line)' }} />
+          <span>{movingToDock ? 'solte para remover' : 'peças · puxe para cima'}</span>
+        </button>
+        <Drawer open={partsOpen} onOpenChange={setPartsOpen}>
+          <DrawerContent className="border-edge bg-panel font-mono">
+            <DrawerHeader className="pb-1">
+              <DrawerTitle className="text-[13px] font-normal tracking-[0.14em] text-ink-hi uppercase">Peças</DrawerTitle>
+              <DrawerDescription className="text-xs text-ink">Toque para colocar no board ou arraste até o lugar.</DrawerDescription>
+            </DrawerHeader>
+            <div className="grid grid-cols-4 gap-1 overflow-y-auto px-3 pb-2">
+              {PALETTE.map(k => (
+                <button key={k} type="button" data-vaul-no-drag onPointerDown={e => startNew(k, e)}
+                  className="flex flex-col items-center gap-1 rounded-xl border border-transparent px-0.5 pt-1 pb-1.5 text-[10px] tracking-[0.06em] text-ink uppercase select-none active:border-edge active:bg-accent"
+                  style={{ touchAction: 'none' }}>
+                  <PartIcon kind={k} className="h-[44px] w-[70px]" />
+                  <span className="whitespace-nowrap">{SPECS[k].name}</span>
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center justify-between gap-3 border-t border-edge px-4 pt-3 pb-5 text-[11px] tracking-[0.12em] text-ink uppercase">
+              <span>Cor do brilho</span>
+              <GlowPicker glow={glow} setGlow={setGlow} />
+            </div>
+          </DrawerContent>
+        </Drawer>
         </div>
       </main>
     </TooltipProvider>
+  );
+}
+
+function GlowPicker({ glow, setGlow, className }: { glow: string; setGlow: (g: string) => void; className?: string }) {
+  return (
+    <div role="radiogroup" aria-label="Cor do brilho" className={cn('flex items-center gap-0.5 rounded-full border border-edge p-0.5', className)}>
+      {GLOWS.map(g => (
+        <button key={g.id} type="button" role="radio" aria-checked={glow === g.id} aria-label={g.name} title={g.name}
+          onClick={() => setGlow(g.id)}
+          className="grid size-7 place-items-center rounded-full border border-transparent md:size-6"
+          style={glow === g.id ? { borderColor: 'var(--line)' } : undefined}>
+          <i className="block size-2.5 rounded-full border transition-transform hover:scale-110"
+            style={{ background: g.c, borderColor: 'var(--line)', boxShadow: glow === g.id ? `0 0 10px 1px ${g.c}` : undefined }} />
+        </button>
+      ))}
+    </div>
   );
 }
 
