@@ -7,7 +7,7 @@ import { useI18n } from '@/lib/i18n/client';
 import { MAX_TT_INPUTS, columnExpression, switchesOf, truthTable } from '@/lib/truth';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/optics/card';
-import { CircuitMotif } from '@/components/CircuitMotif';
+import { TruthTableMotif } from '@/components/TruthTableMotif';
 import { cn } from '@/lib/utils';
 
 const glowText = { color: 'var(--glow)', textShadow: '0 0 8px var(--glow)' };
@@ -23,7 +23,7 @@ export function TruthTablePanel({ circ, onClose }: { circ: Circuit; onClose: () 
     <Card decorations role="region" aria-labelledby={`${panelId}-title`} aria-describedby={`${panelId}-description`} data-truth-panel
       className="absolute top-3 right-3 z-10 flex max-h-[calc(100%-24px)] min-h-0 w-[min(340px,calc(100%-24px))] flex-col gap-0 border border-edge bg-background py-0 ring-0 shadow-xl shadow-black/50">
       <header className="relative shrink-0 overflow-hidden border-b border-edge px-5 py-4">
-        <CircuitMotif className="pointer-events-none absolute -top-5 -right-10 h-40 w-44 text-ink/25 opacity-60" />
+        <TruthTableMotif className="pointer-events-none absolute -top-3 right-3 h-36 w-44 text-ink/25 opacity-60" />
         <div className="relative flex items-center justify-between gap-3">
           <p className="flex min-w-0 items-center gap-2 text-[10px] tracking-[0.13em] text-ink">
             <Table2 className="size-3.5 shrink-0 text-glow" />
