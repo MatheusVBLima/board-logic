@@ -217,6 +217,9 @@ const pt: Dict = {
     yours: 'Sua vez',
     footer: 'Gratuito para estudantes, professores e curiosos.',
   },
+  og: {
+    alt: 'Board Lógica: monte circuitos que brilham. Um meio somador com as chaves A e B acendendo o LED da soma.',
+  },
   notFound: 'Página não encontrada',
 };
 

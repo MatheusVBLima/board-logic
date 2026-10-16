@@ -218,6 +218,9 @@ const en = {
     yours: 'Your turn',
     footer: 'Free for students, teachers and the curious.',
   },
+  og: {
+    alt: 'Logic Board: build circuits that glow. A half adder with switches A and B lighting the Sum LED.',
+  },
   notFound: 'Page not found',
 };
 
