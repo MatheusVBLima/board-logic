@@ -24,7 +24,7 @@ export interface Wire {
   bend?: number;    // 0 auto, 1 near source, 2 middle
 }
 
-export interface Circuit { comps: Comp[]; wires: Wire[] }
+export interface Circuit { comps: Comp[]; wires: Wire[]; w?: number; h?: number }
 
 export interface Spec {
   name: string;     // shown in the dock
@@ -36,24 +36,25 @@ export interface Spec {
   outs: number[];   // y offset of each output pin
   inNames?: string[];
   outNames?: string[];
+  part?: string;    // 74xx part number printed on chips
 }
 
-const gate2 = (name: string, label: string): Spec =>
-  ({ name, label, w: 3, d: 2, h: 0.5, ins: [0.5, 1.5], outs: [1] });
+const gate2 = (name: string, label: string, part: string): Spec =>
+  ({ name, label, part, w: 3, d: 2, h: 0.5, ins: [0.5, 1.5], outs: [1] });
 
 export const SPECS: Record<Kind, Spec> = {
   switch: { name: 'Chave', label: 'SW', w: 2, d: 2, h: 0.4, ins: [], outs: [1] },
   button: { name: 'Botão', label: 'BTN', w: 2, d: 2, h: 0.35, ins: [], outs: [1] },
   clock:  { name: 'Clock', label: 'CLK', w: 3, d: 2, h: 0.5, ins: [], outs: [1] },
   const:  { name: 'Fonte 1', label: 'VCC', w: 2, d: 2, h: 0.45, ins: [], outs: [1] },
-  not:    { name: 'NOT', label: 'NOT', w: 3, d: 2, h: 0.5, ins: [1], outs: [1] },
-  and:    gate2('AND', 'AND'),
-  or:     gate2('OR', 'OR'),
-  xor:    gate2('XOR', 'XOR'),
-  nand:   gate2('NAND', 'NAND'),
-  nor:    gate2('NOR', 'NOR'),
-  xnor:   gate2('XNOR', 'XNOR'),
-  dff:    { name: 'Flip-flop D', label: 'FF-D', w: 3, d: 3, h: 0.5, ins: [1, 2], outs: [1, 2],
+  not:    { name: 'NOT', label: 'NOT', part: '74·04', w: 3, d: 2, h: 0.5, ins: [1], outs: [1] },
+  and:    gate2('AND', 'AND', '74·08'),
+  or:     gate2('OR', 'OR', '74·32'),
+  xor:    gate2('XOR', 'XOR', '74·86'),
+  nand:   gate2('NAND', 'NAND', '74·00'),
+  nor:    gate2('NOR', 'NOR', '74·02'),
+  xnor:   gate2('XNOR', 'XNOR', '74·266'),
+  dff:    { name: 'Flip-flop D', label: 'FF-D', part: '74·74', w: 3, d: 3, h: 0.5, ins: [1, 2], outs: [1, 2],
             inNames: ['D', 'CLK'], outNames: ['Q', 'Q̄'] },
   led:    { name: 'LED', label: 'LED', w: 2, d: 2, h: 0.3, ins: [1], outs: [] },
   seg7:   { name: 'Display', label: 'HEX', w: 3, d: 4, h: 0.5, ins: [0.5, 1.5, 2.5, 3.5], outs: [],
@@ -66,11 +67,41 @@ export const PALETTE: Kind[] = [
   'dff', 'led', 'seg7',
 ];
 
-export const LED_COLORS = ['#ff5a4f', '#ffb547', '#5dff9a', '#4fb4ff', '#c58bff', '#f4f5f5'];
+/** LED colours; the first entry (empty) follows the glow colour */
+export const LED_COLORS = ['', '#ff5a4f', '#5dff9a', '#4fb4ff', '#c58bff', '#f4f5f5'];
+
+/** Glow colours (iso-glow swatches): live colour and its highlight */
+export const GLOWS = [
+  { id: 'ember', name: 'Brasa', c: '#ff7a1a', hi: '#ffb070' },
+  { id: 'cyan', name: 'Ciano', c: '#22d3ee', hi: '#9beefa' },
+  { id: 'lime', name: 'Lima', c: '#a3e635', hi: '#d6f79f' },
+  { id: 'violet', name: 'Violeta', c: '#a78bfa', hi: '#d6caff' },
+  { id: 'rose', name: 'Rosa', c: '#fb7185', hi: '#fdb8c2' },
+  { id: 'white', name: 'Branco', c: '#dfe9ef', hi: '#ffffff' },
+];
 export const CLOCK_HZ = [0.5, 1, 2, 4, 8];
 
-export const BOARD_W = 64;
-export const BOARD_H = 40;
+export const BOARD_SIZES = [
+  { name: 'Mini', w: 24, h: 16 },
+  { name: 'Pequeno', w: 32, h: 20 },
+  { name: 'Médio', w: 48, h: 28 },
+  { name: 'Grande', w: 64, h: 40 },
+  { name: 'Enorme', w: 96, h: 60 },
+  { name: 'Gigante', w: 128, h: 80 },
+];
+export const BOARD_W = 32;
+export const BOARD_H = 20;
+export const boardSize = (c: Circuit) => ({ w: c.w ?? BOARD_W, h: c.h ?? BOARD_H });
+
+/** Smallest board that still holds every part (board origin stays at 0,0). */
+export function minBoard(c: Circuit) {
+  let w = 0, h = 0;
+  for (const k of c.comps) {
+    const s = SPECS[k.kind];
+    w = Math.max(w, k.x + s.w + 1); h = Math.max(h, k.y + s.d);
+  }
+  return { w, h };
+}
 
 /** Board position of a pin: inputs sit one cell left of the part, outputs one cell right. */
 export function pinPos(c: Comp, side: 'in' | 'out', i: number): [number, number] {
@@ -85,7 +116,6 @@ export function newComp(kind: Kind, x: number, y: number): Comp {
   const c: Comp = { id: uid(), kind, x, y };
   if (kind === 'switch') c.on = false;
   if (kind === 'clock') c.hz = 1;
-  if (kind === 'led') c.color = LED_COLORS[0];
   return c;
 }
 
@@ -113,7 +143,7 @@ export function routeWire(circ: Circuit, w: Wire): string {
 }
 
 export function boundsOf(circ: Circuit) {
-  if (!circ.comps.length) return { x0: 0, y0: 0, x1: BOARD_W, y1: BOARD_H };
+  if (!circ.comps.length) { const b = boardSize(circ); return { x0: 0, y0: 0, x1: b.w, y1: b.h }; }
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (const c of circ.comps) {
     const s = SPECS[c.kind];
@@ -132,9 +162,9 @@ export function overlaps(circ: Circuit, kind: Kind, x: number, y: number, ignore
   });
 }
 
-export function clampPos(kind: Kind, x: number, y: number): [number, number] {
+export function clampPos(kind: Kind, x: number, y: number, b = { w: BOARD_W, h: BOARD_H }): [number, number] {
   const s = SPECS[kind];
-  return [Math.max(1, Math.min(BOARD_W - s.w - 1, x)), Math.max(0, Math.min(BOARD_H - s.d, y))];
+  return [Math.max(1, Math.min(b.w - s.w - 1, x)), Math.max(0, Math.min(b.h - s.d, y))];
 }
 
 // ---------- sharing ----------
@@ -160,6 +190,8 @@ export function isCircuit(c: unknown): c is Circuit {
   if (!c || typeof c !== 'object') return false;
   const o = c as Circuit;
   return Array.isArray(o.comps) && Array.isArray(o.wires)
+    && (o.w === undefined || (Number.isFinite(o.w) && o.w >= 8 && o.w <= 256))
+    && (o.h === undefined || (Number.isFinite(o.h) && o.h >= 6 && o.h <= 256))
     && o.comps.every(k => k && typeof k.id === 'string' && k.kind in SPECS && Number.isFinite(k.x) && Number.isFinite(k.y))
     && o.wires.every(w => w && w.from && w.to && typeof w.from.c === 'string' && typeof w.to.c === 'string');
 }
