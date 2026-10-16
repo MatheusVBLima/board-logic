@@ -44,8 +44,7 @@ const emptySim: SimResult = { out: {}, inp: {}, unstable: false };
 const partState = (sim: SimResult, c: Comp, pressed: Set<string>): PartState => ({
   ins: sim.inp[c.id] ?? [], outs: sim.out[c.id] ?? [], pressed: pressed.has(c.id),
 });
-// front view: parts further back (smaller y) are drawn first
-const depth = (c: Comp) => c.y + SPECS[c.kind].d + c.x * 0.001;
+const depth = (c: Comp) => c.x + c.y + (SPECS[c.kind].w + SPECS[c.kind].d) / 2;
 const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
 /** a saved circuit grows its board if a part sits outside it */
 const fitBoard = (c: Circuit): Circuit => {
@@ -84,7 +83,7 @@ export default function Simulator() {
   }, []);
 
   const [sel, setSel] = useState<Sel>(null);
-  const [iso, setIso] = useState(true);
+  const [iso, setIso] = useState(false);
   const [glow, setGlow] = useState<string>(GLOWS[0].id);
   const [learnOpen, setLearnOpen] = useState(false);
   const [partsOpen, setPartsOpen] = useState(false);   // mobile parts drawer
@@ -626,7 +625,7 @@ export default function Simulator() {
               </DropdownMenu>
               <ToggleGroup type="single" size="sm" variant="outline" value={iso ? 'iso' : '2d'}
                 onValueChange={v => { if (!v) return; const nIso = v === 'iso'; setIso(nIso); requestAnimationFrame(() => fitTo(circRef.current, makeProj(nIso, K), sizeRef.current, true)); }}>
-                <ToggleGroupItem value="iso" className="px-2.5 text-xs">3D</ToggleGroupItem>
+                <ToggleGroupItem value="iso" className="px-2.5 text-xs">ISO</ToggleGroupItem>
                 <ToggleGroupItem value="2d" className="px-2.5 text-xs">2D</ToggleGroupItem>
               </ToggleGroup>
               <Separator orientation="vertical" className="mx-1 !h-5" />

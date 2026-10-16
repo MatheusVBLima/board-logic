@@ -5,11 +5,14 @@ import { SEG_MAP, hexValue } from '../lib/sim.ts';
 
 type BoxProps = { pr: Proj; x: number; y: number; z: number; w: number; d: number; h: number; r?: number; cls?: string };
 
-/** A box is its visible faces: the front (3D view only) and the top. */
+/** A box is its three visible faces: right side, front, top (only the top in 2D). */
 export function Box({ pr, x, y, z, w, d, h, r = 0, cls = '' }: BoxProps) {
   const rs = Math.min(r, h / 3);
   return (
     <>
+      {pr.iso && (
+        <g transform={pr.SIDE(x + w, y + d, z + h)}><rect className={`face side ${cls}`} width={d} height={h} rx={rs} /></g>
+      )}
       {pr.iso && (
         <g transform={pr.FRONT(x, y + d, z + h)}><rect className={`face front ${cls}`} width={w} height={h} rx={rs} /></g>
       )}
