@@ -12,7 +12,7 @@ import { authEnabled, supabase } from '@/lib/supabase/client';
 type Mode = 'signin' | 'signup' | 'forgot' | 'reset';
 
 export function LoginForm() {
-  const { t, href } = useI18n();
+  const { t, href, locale } = useI18n();
   const router = useRouter();
   const params = useSearchParams();
   const rawNext = params.get('next');
@@ -39,7 +39,7 @@ export function LoginForm() {
         router.replace(next); router.refresh();
       } else if (mode === 'signup') {
         if (password.length < 6) { setError(t.auth.weakPassword); return; }
-        const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: callback(next) } });
+        const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: callback(next), data: { locale } } });
         if (error) { setError(error.message || t.auth.error); return; }
         if (data.session) { router.replace(next); router.refresh(); } else setInfo(t.auth.checkEmail);
       } else if (mode === 'forgot') {
