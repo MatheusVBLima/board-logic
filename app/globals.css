@@ -137,3 +137,41 @@
 
 
 @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } .glass { transition: none; } }
+
+/* ---------- landing page: its own theme, independent of the board ---------- */
+.landing {
+  --l-bg: #f3efe7; --l-paper: #fbf8f2; --l-ink: #1a1816; --l-muted: #6b655d; --l-line: #ddd5c8;
+  --l-accent: #ff6a00; --l-serif: "Instrument Serif", ui-serif, Georgia, serif;
+  background: var(--l-bg); color: var(--l-ink); color-scheme: light;
+}
+.landing-brand { font-family: var(--mono); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; }
+.landing-dot { display: inline-block; width: 7px; height: 7px; border-radius: 99px; background: var(--l-accent); box-shadow: 0 0 10px var(--l-accent); }
+.landing-link { font-family: var(--mono); font-size: 13px; color: var(--l-muted); transition: color .2s; }
+.landing-link:hover { color: var(--l-ink); }
+.landing-account button { color: var(--l-muted); }
+.landing-account button:hover { color: var(--l-ink); background: rgb(0 0 0 / .05); }
+.landing-eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--l-accent); }
+.landing-title { font-family: var(--l-serif); font-weight: 400; font-size: clamp(3rem, 7.5vw, 6rem); line-height: .95; letter-spacing: -.02em; }
+.landing-lead { font-family: var(--mono); font-size: 15px; line-height: 1.7; color: var(--l-muted); }
+.landing-btn {
+  display: inline-flex; align-items: center; gap: .6rem; height: 46px; padding: 0 1.25rem; border-radius: 999px;
+  font-family: var(--mono); font-size: 14px; border: 1px solid var(--l-line); background: var(--l-paper); color: var(--l-ink);
+  transition: transform .15s, box-shadow .2s, background .2s;
+}
+.landing-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px -8px rgb(0 0 0 / .25); }
+.landing-btn-primary { background: var(--l-ink); color: var(--l-paper); border-color: var(--l-ink); }
+.landing-btn-primary:hover { box-shadow: 0 8px 28px -8px color-mix(in srgb, var(--l-accent) 70%, transparent); }
+.landing-stage {
+  display: block; aspect-ratio: 4 / 3; border-radius: 28px; padding: 4%; background: #0c0d0e;
+  box-shadow: 0 40px 80px -40px rgb(0 0 0 / .55), inset 0 0 0 1px #222426;
+  --glow: var(--l-accent); --glow-hi: #ffb070;
+}
+.landing-grid { border: 1px solid var(--l-line); border-radius: 24px; background: var(--l-line); }
+.landing-card { background: var(--l-paper); padding: 1.75rem; }
+.landing-accent { color: var(--l-accent); }
+.landing-card-title { font-family: var(--l-serif); font-size: 1.6rem; line-height: 1.1; }
+.landing-card-body { font-family: var(--mono); font-size: 13px; line-height: 1.65; color: var(--l-muted); }
+.landing-h2 { font-family: var(--l-serif); font-size: clamp(2rem, 4.5vw, 3.25rem); line-height: 1; max-width: 18ch; }
+.landing-step { display: flex; flex-direction: column; gap: .75rem; border-top: 1px solid var(--l-ink); padding-top: 1rem; font-family: var(--mono); font-size: 14px; line-height: 1.6; }
+.landing-step-n { font-family: var(--l-serif); font-size: 2.25rem; line-height: 1; color: var(--l-accent); }
+.landing-footer { border-top: 1px solid var(--l-line); font-family: var(--mono); font-size: 12px; letter-spacing: .08em; color: var(--l-muted); }
