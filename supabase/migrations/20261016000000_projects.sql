@@ -57,3 +57,6 @@ drop trigger if exists projects_touch on public.projects;
 create trigger projects_touch before update on public.projects
   for each row execute function public.touch_updated_at();
 
+
+-- trigger-only function: keep it out of the /rpc API
+revoke execute on function public.enforce_project_limit() from public, anon, authenticated;
