@@ -23,6 +23,9 @@ Arraste peças do menu de baixo para o board, puxe fios entre os pinos e veja o 
 
 ## Desenvolvimento
 
+Para configurar sua própria conta Supabase, siga o [`setup.md`](setup.md): ele inclui o SQL
+completo e as instruções para preencher o [`.env.example`](.env.example).
+
 ```bash
 bun install
 bun dev        # http://localhost:3000
@@ -41,15 +44,15 @@ em `lib/iso.ts` + `components/Part.tsx`.
 - O guia inclui expressões, tabelas-verdade e demonstrações para todas as peças. Os 18 desafios vão de portas universais a roteamento de sinais, decodificação e soma de dois bits. As referências e simplificações dos novos componentes estão em [`docs/logic-components.md`](docs/logic-components.md).
 - Rotas: `/[lang]` landing, `/[lang]/board` simulador, `/[lang]/learn` guia, `/[lang]/challenges` desafios,
   `/[lang]/login` e `/[lang]/projects`.
-- Contas e projetos salvos usam Supabase (até 10 projetos por usuário). Aplique
-  `supabase/migrations/20261016000000_projects.sql` e defina `NEXT_PUBLIC_SUPABASE_URL` e
-  `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Sem essas variáveis o site funciona normalmente, só sem login.
+- Contas e projetos salvos usam Supabase (até 10 projetos por usuário). Siga o [`setup.md`](setup.md)
+  e defina `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+  (ou a chave legada `NEXT_PUBLIC_SUPABASE_ANON_KEY`). Sem essas variáveis o site funciona normalmente, só sem login.
 - No Supabase (Authentication > URL Configuration) use o domínio do site como Site URL e libere
-  `https://<domínio>/auth/callback` nas Redirect URLs.
+  `https://<domínio>/**` nas Redirect URLs (o link de e-mail volta em `/auth/callback?next=...`).
 
 ## Deploy na Vercel
 
 Importe o repositório em https://vercel.com/new. A Vercel detecta Next.js e o `bun.lock` automaticamente;
-defina as duas variáveis do Supabase acima.
+defina as duas variáveis do Supabase acima. O passo a passo para um deploy próprio está na seção 6 do [`setup.md`](setup.md).
 
 Visual inspirado em [iso-glow](https://isoglow.dev) e [iso-figure](https://github.com/MrBongoC/ai-iso-skill).

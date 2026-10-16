@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { getDict } from '@/lib/i18n/server';
 import en from '@/lib/i18n/en';
 import pt from '@/lib/i18n/pt';
+import { SITE_HOST } from '@/lib/site';
 
 // One share image per language: /en gets the English text, /pt the Portuguese.
 
@@ -82,7 +83,7 @@ export default async function Image({ params }: { params: Promise<{ lang: string
           </div>
           <div style={{ marginTop: 'auto', fontSize: 20, letterSpacing: 4, textTransform: 'uppercase', color: C.ink }}>{L.eyebrow}</div>
           <div style={{ marginTop: 20, fontSize: 78, fontWeight: 300, lineHeight: 1.04, letterSpacing: -3 }}>{L.title}</div>
-          <div style={{ marginTop: 36, fontSize: 22, color: C.ink }}>board-logic.vercel.app</div>
+          <div style={{ marginTop: 36, fontSize: 22, color: C.ink }}>{SITE_HOST}</div>
         </div>
 
         <div style={{ position: 'absolute', right: 56, top: 115, width: 500, height: 400, display: 'flex' }}>
