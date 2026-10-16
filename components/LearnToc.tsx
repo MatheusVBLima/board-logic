@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 export interface TocGroup { title: string; items: { id: string; label: string }[] }
 
 /** Index of the guide; the entry for the section on screen is highlighted (scroll-spy). */
-export function LearnToc({ groups }: { groups: TocGroup[] }) {
+export function LearnToc({ groups, label }: { groups: TocGroup[]; label: string }) {
   const [active, setActive] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export function LearnToc({ groups }: { groups: TocGroup[] }) {
   }, [groups]);
 
   return (
-    <nav aria-label="Conteúdo" className="sticky top-20 hidden h-fit w-56 shrink-0 flex-col gap-4 text-[12.5px] lg:flex">
+    <nav aria-label={label} className="sticky top-20 hidden h-fit w-56 shrink-0 flex-col gap-4 text-[12.5px] lg:flex">
       {groups.map(g => (
         <div key={g.title}>
           <div className="mb-1.5 text-[10.5px] tracking-[0.14em] uppercase" style={{ color: 'var(--line)' }}>{g.title}</div>

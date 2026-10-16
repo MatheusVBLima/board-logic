@@ -1,33 +1,18 @@
-// Teaching texts: a one-line summary per part for the "Aprender" sidebar, and the
-// complete guide shown on the /aprender page.
+// Textos de ensino em português: um resumo por peça para o painel "Aprender" e o
+// guia completo da página /pt/learn.
 
-import type { Kind } from './circuit.ts';
-
-export type Group = 'Entradas' | 'Portas lógicas' | 'Memória' | 'Saídas';
-
-export interface Lesson {
-  kind: Kind;
-  group: Group;
-  /** one line for the sidebar */
-  summary: string;
-  /** Boolean expression of the output, when it has one */
-  expr?: string;
-  /** truth table: header then rows, all as strings */
-  table?: { head: string[]; rows: string[][] };
-  /** full guide: titled blocks of paragraphs */
-  guide: { title: string; body: string[] }[];
-}
+import type { Basic, Lesson, LearnContent } from './types.ts';
 
 const t2 = (f: (a: number, b: number) => number) => ({
   head: ['A', 'B', 'saída'],
   rows: [[0, 0], [0, 1], [1, 0], [1, 1]].map(([a, b]) => [a, b, f(a, b)].map(String)),
 });
 
-export const GROUPS: Group[] = ['Entradas', 'Portas lógicas', 'Memória', 'Saídas'];
+const GROUP_NAMES = { inputs: 'Entradas', gates: 'Portas lógicas', memory: 'Memória', outputs: 'Saídas' };
 
-export const LESSONS: Lesson[] = [
+const LESSONS: Lesson[] = [
   {
-    kind: 'switch', group: 'Entradas',
+    kind: 'switch', group: 'inputs',
     summary: 'Liga e desliga: na posição 1 manda sinal, na 0 não manda.',
     guide: [
       { title: 'O que é', body: [
@@ -44,7 +29,7 @@ export const LESSONS: Lesson[] = [
     ],
   },
   {
-    kind: 'button', group: 'Entradas',
+    kind: 'button', group: 'inputs',
     summary: 'Manda 1 só enquanto está apertado.',
     guide: [
       { title: 'O que é', body: [
@@ -61,7 +46,7 @@ export const LESSONS: Lesson[] = [
     ],
   },
   {
-    kind: 'clock', group: 'Entradas',
+    kind: 'clock', group: 'inputs',
     summary: 'Alterna sozinho entre 0 e 1 num ritmo fixo.',
     guide: [
       { title: 'O que é', body: [
@@ -78,7 +63,7 @@ export const LESSONS: Lesson[] = [
     ],
   },
   {
-    kind: 'const', group: 'Entradas',
+    kind: 'const', group: 'inputs',
     summary: 'Sempre em 1, como um fio ligado no positivo.',
     guide: [
       { title: 'O que é', body: [
@@ -90,7 +75,7 @@ export const LESSONS: Lesson[] = [
     ],
   },
   {
-    kind: 'not', group: 'Portas lógicas',
+    kind: 'not', group: 'gates',
     summary: 'Inverte o sinal: entra 1, sai 0; entra 0, sai 1.',
     expr: 'S = Ā  (lê-se "não A")',
     table: { head: ['A', 'saída'], rows: [['0', '1'], ['1', '0']] },
@@ -108,7 +93,7 @@ export const LESSONS: Lesson[] = [
     ],
   },
   {
-    kind: 'and', group: 'Portas lógicas',
+    kind: 'and', group: 'gates',
     summary: 'Só dá 1 quando as duas entradas são 1.',
     expr: 'S = A · B  (lê-se "A e B")',
     table: t2((a, b) => a & b),
@@ -129,7 +114,7 @@ export const LESSONS: Lesson[] = [
     ],
   },
   {
-    kind: 'or', group: 'Portas lógicas',
+    kind: 'or', group: 'gates',
     summary: 'Dá 1 quando pelo menos uma entrada é 1.',
     expr: 'S = A + B  (lê-se "A ou B")',
     table: t2((a, b) => a | b),
@@ -150,7 +135,7 @@ export const LESSONS: Lesson[] = [
     ],
   },
   {
-    kind: 'xor', group: 'Portas lógicas',
+    kind: 'xor', group: 'gates',
     summary: 'Dá 1 quando as entradas são diferentes.',
     expr: 'S = A ⊕ B = A·B̄ + Ā·B',
     table: t2((a, b) => a ^ b),
@@ -172,7 +157,7 @@ export const LESSONS: Lesson[] = [
     ],
   },
   {
-    kind: 'nand', group: 'Portas lógicas',
+    kind: 'nand', group: 'gates',
     summary: 'É uma AND invertida: só dá 0 quando as duas são 1.',
     expr: 'S = ‾(A · B)',
     table: t2((a, b) => 1 - (a & b)),
@@ -193,7 +178,7 @@ export const LESSONS: Lesson[] = [
     ],
   },
   {
-    kind: 'nor', group: 'Portas lógicas',
+    kind: 'nor', group: 'gates',
     summary: 'É uma OR invertida: só dá 1 quando as duas são 0.',
     expr: 'S = ‾(A + B)',
     table: t2((a, b) => 1 - (a | b)),
@@ -213,7 +198,7 @@ export const LESSONS: Lesson[] = [
     ],
   },
   {
-    kind: 'xnor', group: 'Portas lógicas',
+    kind: 'xnor', group: 'gates',
     summary: 'Dá 1 quando as entradas são iguais.',
     expr: 'S = ‾(A ⊕ B)',
     table: t2((a, b) => 1 - (a ^ b)),
@@ -230,7 +215,7 @@ export const LESSONS: Lesson[] = [
     ],
   },
   {
-    kind: 'dff', group: 'Memória',
+    kind: 'dff', group: 'memory',
     summary: 'Guarda 1 bit: copia D para Q quando o clock sobe.',
     expr: 'Q ← D  na borda de subida do CLK',
     table: { head: ['CLK', 'D', 'Q depois'], rows: [['↑', '0', '0'], ['↑', '1', '1'], ['sem subida', 'x', 'mantém']] },
@@ -252,7 +237,7 @@ export const LESSONS: Lesson[] = [
     ],
   },
   {
-    kind: 'led', group: 'Saídas',
+    kind: 'led', group: 'outputs',
     summary: 'Acende quando chega 1 na entrada.',
     guide: [
       { title: 'O que é', body: [
@@ -267,7 +252,7 @@ export const LESSONS: Lesson[] = [
     ],
   },
   {
-    kind: 'seg7', group: 'Saídas',
+    kind: 'seg7', group: 'outputs',
     summary: 'Mostra em hexadecimal (0 a F) o número das 4 entradas.',
     table: { head: ['8', '4', '2', '1', 'mostra'], rows: [
       ['0', '0', '0', '0', '0'], ['0', '0', '1', '1', '3'], ['0', '1', '0', '1', '5'],
@@ -288,8 +273,7 @@ export const LESSONS: Lesson[] = [
   },
 ];
 
-/** General topics shown before the parts on the /aprender page. */
-export const BASICS: { id: string; title: string; body: string[] }[] = [
+const BASICS: Basic[] = [
   {
     id: 'sinais', title: 'Sinais digitais: 0 e 1',
     body: [
@@ -308,7 +292,7 @@ export const BASICS: { id: string; title: string; body: string[] }[] = [
     id: 'tabela', title: 'Tabela-verdade',
     body: [
       'A tabela-verdade lista todas as combinações de entrada e a saída de cada uma. Uma porta de 2 entradas tem 4 linhas (2²), e uma de 3 entradas tem 8 (2³).',
-      'Para testar no board, ponha duas chaves nas entradas e um LED na saída, e passe pelas quatro combinações apertando A e B.',
+      'Para testar no board, ponha duas chaves nas entradas e um LED na saída, e passe pelas quatro combinações apertando A e B. Ou abra o painel da tabela-verdade e o board preenche tudo para você.',
     ],
   },
   {
@@ -333,3 +317,6 @@ export const BASICS: { id: string; title: string; body: string[] }[] = [
     ],
   },
 ];
+
+const content: LearnContent = { groupNames: GROUP_NAMES, lessons: LESSONS, basics: BASICS };
+export default content;

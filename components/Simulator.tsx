@@ -2,18 +2,30 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
-  BookOpen, Eraser, Palette, GraduationCap, Grid3x3, Link2, Maximize, Pause, Play, Redo2, Trash2, Undo2, ZoomIn, ZoomOut,
+  BookOpen, ChevronDown, CloudUpload, Eraser, FilePlus2, Palette, GraduationCap, Grid3x3, Link2, Maximize, Pause, Play, Redo2, Save,
+  Table2, Trash2, Undo2, ZoomIn, ZoomOut,
 } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   BOARD_SIZES, CLOCK_HZ, DEFAULT_GLOW, LED_COLORS, PALETTE, SPECS,
   boardSize, boundsOf, clampPos, decodeCircuit, encodeCircuit, isCircuit, minBoard, newComp, overlaps, pinPos, routeWire, uid,
   type Circuit, type Comp, type Kind, type Wire,
 } from '@/lib/circuit';
 import { EXAMPLES } from '@/lib/examples';
+import { challengeById, starterCircuit } from '@/lib/challenges';
+import { useI18n } from '@/lib/i18n/client';
+import type { Dict } from '@/lib/i18n/en';
+import { LimitError, PROJECT_LIMIT, countProjects, createProject, getProject, updateProject } from '@/lib/projects';
+import { authEnabled, useUser } from '@/lib/supabase/client';
+import { ledLabel } from '@/lib/truth';
 import { makeProj, type Proj } from '@/lib/iso';
 import { hexValue, simulate, type Memory, type SimResult } from '@/lib/sim';
 import { Box, Pads, Part, leadPaths, type PartState } from '@/components/Part';
+import { AccountMenu } from '@/components/AccountMenu';
+import { ChallengeCard } from '@/components/ChallengeCard';
 import { LearnPanel } from '@/components/LearnPanel';
+import { SaveDialog } from '@/components/SaveDialog';
+import { TruthTablePanel } from '@/components/TruthTablePanel';
 import { PartIcon } from '@/components/PartIcon';
 import { Button } from '@/components/ui/button';
 import {
@@ -53,8 +65,15 @@ const fitBoard = (c: Circuit): Circuit => {
 };
 
 export default function Simulator() {
+  const { t, href } = useI18n();
+  const router = useRouter();
+  const params = useSearchParams();
+  const challenge = challengeById(params.get('challenge'));
+  const projectParam = challenge ? null : params.get('p');
+  const storeKey = challenge ? `${STORE_KEY}:ch:${challenge.id}` : STORE_KEY;
+
   // ---------- circuit + history ----------
-  const [circ, setCircRaw] = useState<Circuit>(() => EXAMPLES[0].make());
+  const [circ, setCircRaw] = useState<Circuit>(() => (challenge ? starterCircuit(challenge) : EXAMPLES[0].make()));
   const past = useRef<Circuit[]>([]);
   const future = useRef<Circuit[]>([]);
   const [, bumpHistory] = useState(0);
@@ -94,6 +113,16 @@ export default function Simulator() {
   const dragRef = useRef<Drag | null>(null);
   const setDrag = (d: Drag | null) => { dragRef.current = d; setDragState(d); };
   const [toast, setToast] = useState<string | null>(null);
+  const [tableOpen, setTableOpen] = useState(false);
+
+  // ---------- saved project ----------
+  const user = useUser();
+  const [project, setProject] = useState<{ id: string; name: string } | null>(null);
+  const [savedCirc, setSavedCirc] = useState<Circuit | null>(null);
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [used, setUsed] = useState(0);
+  const dirty = !!project && savedCirc !== circ;
 
   const pr = useMemo(() => makeProj(iso, K), [iso]);
 
@@ -159,9 +188,9 @@ export default function Simulator() {
   useEffect(() => {
     let start: Circuit | null = null;
     const m = location.hash.match(/c=([\w-]+)/);
-    if (m) start = decodeCircuit(m[1]);
+    if (m && !challenge) start = decodeCircuit(m[1]);
     if (!start) {
-      try { const raw = localStorage.getItem(STORE_KEY); if (raw) { const c = JSON.parse(raw); if (isCircuit(c)) start = c; } } catch { /* ignore */ }
+      try { const raw = localStorage.getItem(storeKey); if (raw) { const c = JSON.parse(raw); if (isCircuit(c)) start = c; } } catch { /* ignore */ }
     }
     try {
       const g = localStorage.getItem(STORE_KEY + ':glow');
@@ -185,9 +214,33 @@ export default function Simulator() {
 
   useEffect(() => {
     if (!loaded.current) return;
-    const t = setTimeout(() => { try { localStorage.setItem(STORE_KEY, JSON.stringify(circ)); } catch { /* ignore */ } }, 300);
-    return () => clearTimeout(t);
-  }, [circ]);
+    const id = setTimeout(() => { try { localStorage.setItem(storeKey, JSON.stringify(circ)); } catch { /* ignore */ } }, 300);
+    return () => clearTimeout(id);
+  }, [circ, storeKey]);
+
+  // open a saved project (?p=id) once we know who is signed in
+  const projectLoaded = useRef<string | null>(null);
+  useEffect(() => {
+    if (!projectParam || !user || projectLoaded.current === projectParam) return;
+    projectLoaded.current = projectParam;
+    getProject(projectParam).then(p => {
+      if (!p) { flash(t.board.loadFailed); return; }
+      const c = fitBoard(p.circuit);
+      mem.current = {}; lastOut.current = {};
+      past.current = []; future.current = [];
+      setCircRaw(c); setSavedCirc(c);
+      setProject({ id: p.id, name: p.name });
+      requestAnimationFrame(() => fitTo(c, pr, sizeRef.current, true));
+    }).catch(() => flash(t.board.loadFailed));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectParam, user]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
 
   useEffect(() => {
     document.documentElement.style.setProperty('--glow', glow);
@@ -307,13 +360,49 @@ export default function Simulator() {
     if (!circ.comps.length) return;
     commit(c => ({ comps: [], wires: [], w: c.w, h: c.h }));
     setSel(null);
-    flash('Board limpo · ctrl+z desfaz');
+    flash(t.board.cleared);
+  };
+
+  const loginHref = () => `${href('/login')}?next=${encodeURIComponent(location.pathname + location.search)}`;
+
+  const save = async (asNew = false) => {
+    if (!user) { router.push(loginHref()); return; }
+    if (project && !asNew) {
+      setSaving(true);
+      try { await updateProject(project.id, { circuit: circ }); setSavedCirc(circ); flash(t.board.saved); }
+      catch { flash(t.board.saveFailed); }
+      finally { setSaving(false); }
+      return;
+    }
+    countProjects().then(setUsed).catch(() => {});
+    setSaveOpen(true);
+  };
+
+  const createNamed = async (name: string) => {
+    if (used >= PROJECT_LIMIT) return t.board.limitReached(PROJECT_LIMIT);
+    try {
+      const p = await createProject(name, circ);
+      setProject({ id: p.id, name: p.name }); setSavedCirc(circ);
+      projectLoaded.current = p.id;
+      history.replaceState(null, '', `${location.pathname}?p=${p.id}`);
+      setSaveOpen(false);
+      flash(t.board.saved);
+      return null;
+    } catch (e) {
+      return e instanceof LimitError ? t.board.limitReached(PROJECT_LIMIT) : t.board.saveFailed;
+    }
+  };
+
+  const detachProject = () => {
+    setProject(null); setSavedCirc(null);
+    projectLoaded.current = null;
+    history.replaceState(null, '', location.pathname);
   };
 
   const share = async () => {
     const url = `${location.origin}${location.pathname}#c=${encodeCircuit(circ)}`;
-    history.replaceState(null, '', url);
-    try { await navigator.clipboard.writeText(url); flash('Link copiado'); } catch { flash('Link no endereço da página'); }
+    if (!challenge && !project) history.replaceState(null, '', url);
+    try { await navigator.clipboard.writeText(url); flash(t.board.linkCopied); } catch { flash(t.board.linkInAddress); }
   };
 
   // ---------- pointer handling ----------
@@ -426,7 +515,7 @@ export default function Simulator() {
           setCircRaw(cur => ({ ...cur, comps: cur.comps.filter(k => k.id !== d.id), wires: cur.wires.filter(w => w.from.c !== d.id && w.to.c !== d.id) }));
           setSel(null);
           bumpHistory(v => v + 1);
-          flash('Peça removida');
+          flash(t.board.partRemoved);
         } else if (!d.moved && c) {
           if (c.kind === 'switch') commit(cur => ({ ...cur, comps: cur.comps.map(k => k.id === c.id ? { ...k, on: !k.on } : k) }));
           if (c.kind === 'clock') commit(cur => ({ ...cur, comps: cur.comps.map(k => k.id === c.id ? { ...k, hz: CLOCK_HZ[(CLOCK_HZ.indexOf(k.hz ?? 1) + 1) % CLOCK_HZ.length] } : k) }));
@@ -513,7 +602,9 @@ export default function Simulator() {
   }), [circ, sim]);
   const leads = useMemo(() => circ.comps.flatMap(c => leadPaths(c, partState(sim, c, pressed))), [circ.comps, sim, pressed]);
   const switches = circ.comps.filter(c => c.kind === 'switch');
+  const ledComps = circ.comps.filter(c => c.kind === 'led');
   const tagOf = (c: Comp) => {
+    if (c.kind === 'led') return ledComps.length > 1 || tableOpen || challenge ? ledLabel(ledComps.indexOf(c)) : undefined;
     if (c.kind !== 'switch') return undefined;
     const i = switches.indexOf(c);
     return i >= 0 && i < LETTERS.length ? LETTERS[i].toUpperCase() : undefined;
@@ -536,31 +627,31 @@ export default function Simulator() {
   }
 
   // readout
-  const ledComps = circ.comps.filter(c => c.kind === 'led');
   const lit = ledComps.filter(c => sim.inp[c.id]?.[0]).length;
   const hexes = circ.comps.filter(c => c.kind === 'seg7').map(c => hexValue(sim.inp[c.id] ?? [0, 0, 0, 0]).toString(16).toUpperCase());
   const readout = [
     switches.length ? switches.slice(0, 8).map(c => `${tagOf(c)?.toLowerCase()}${c.on ? 1 : 0}`).join(' ') : null,
     ledComps.length ? `leds ${lit}/${ledComps.length}` : null,
     hexes.length ? `hex ${hexes.join(' ')}` : null,
-    !switches.length && !ledComps.length && !hexes.length ? `${circ.comps.length} peças · ${circ.wires.length} fios` : null,
-    sim.unstable ? 'oscilando' : null,
-    paused ? 'pausado' : null,
+    !switches.length && !ledComps.length && !hexes.length ? t.board.pieces(circ.comps.length, circ.wires.length) : null,
+    sim.unstable ? t.board.oscillating : null,
+    paused ? t.board.paused : null,
   ].filter(Boolean).join(' · ');
 
   const selComp = sel?.type === 'comp' ? circ.comps.find(c => c.id === sel.id) : null;
   const keysHint = switches.length && size.w < 640
-    ? 'toque nas chaves para ligar · arraste para mover'
+    ? t.board.hintTapSwitches
     : switches.length
-    ? `aperte ${switches.slice(0, 4).map(tagOf).join(' · ')}${switches.length > 4 ? ' …' : ''} ou clique nas chaves`
-    : 'arraste peças do menu · puxe fios entre os pinos';
+    ? t.board.hintKeys(`${switches.slice(0, 4).map(tagOf).join(' · ')}${switches.length > 4 ? ' …' : ''}`)
+    : t.board.hintEmpty;
   const instruction = wiring?.sticky
-    ? 'toque em outro pino para ligar · esc cancela'
+    ? t.board.hintSticky
     : selComp
-      ? hintFor(selComp.kind)
+      ? hintFor(t, selComp.kind)
       : sel?.type === 'wire'
-        ? 'clique de novo no fio para mudar a dobra · delete apaga'
+        ? t.board.hintWire
         : keysHint;
+  const palette = challenge?.allowed ? PALETTE.filter(k => k === 'switch' || k === 'led' || challenge.allowed!.includes(k)) : PALETTE;
 
   const bs = boardSize(circ);
   const need = minBoard(circ);
@@ -580,45 +671,64 @@ export default function Simulator() {
         <figure className="relative m-0 flex min-h-0 flex-1 flex-col rounded-[22px] border border-edge bg-panel">
           {/* top caption + toolbar */}
           <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 pt-3 sm:px-6 sm:pt-4">
-            <div className="flex items-center gap-3 text-[13px] tracking-[0.14em] text-ink-hi uppercase">
-              <span className="inline-block size-1.5 rounded-full" style={{ background: 'var(--glow)', boxShadow: '0 0 8px var(--glow)' }} />
-              <span>Board lógica</span>
+            <div className="flex min-w-0 items-center gap-3 text-[13px] tracking-[0.14em] text-ink-hi uppercase">
+              <a href={href('/')} className="flex items-center gap-3">
+                <span className="inline-block size-1.5 rounded-full" style={{ background: 'var(--glow)', boxShadow: '0 0 8px var(--glow)' }} />
+                <span className={cn(project && 'max-sm:hidden')}>{t.brand}</span>
+              </a>
+              {project && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="-ml-1 min-w-0 normal-case tracking-[0.04em] text-ink hover:text-ink-hi">
+                      <span className="max-sm:hidden">/</span><span className="truncate">{project.name}</span>
+                      {dirty && <span className="size-1.5 shrink-0 rounded-full" style={{ background: 'var(--glow)' }} title={t.board.unsaved} />}
+                      <ChevronDown />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="font-mono">
+                    <DropdownMenuItem onSelect={() => save(true)}><CloudUpload />{t.board.saveAs}</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={detachProject}><FilePlus2 />{t.board.newCircuit}</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-1">
               <Button variant={learnOpen ? 'secondary' : 'ghost'} size="sm" className="text-ink hover:text-ink-hi" onClick={() => setLearnOpen(o => !o)}>
-                <GraduationCap /><span className="hidden sm:inline">Aprender</span>
+                <GraduationCap /><span className="hidden sm:inline">{t.nav.learn}</span>
               </Button>
+              {!challenge && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="text-ink hover:text-ink-hi"><BookOpen /><span className="hidden sm:inline">{t.board.examples}</span></Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="font-mono">
+                    <DropdownMenuLabel className="text-xs uppercase tracking-widest text-ink">{t.board.readyCircuits}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {EXAMPLES.map(ex => (
+                      <DropdownMenuItem key={ex.id} onSelect={() => loadExample(ex.id)}>{t.examples[ex.id] ?? ex.name}</DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-ink hover:text-ink-hi"><BookOpen /><span className="hidden sm:inline">Exemplos</span></Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="font-mono">
-                  <DropdownMenuLabel className="text-xs uppercase tracking-widest text-ink">Circuitos prontos</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {EXAMPLES.map(ex => (
-                    <DropdownMenuItem key={ex.id} onSelect={() => loadExample(ex.id)}>{ex.name}</DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <DropdownMenu>
-                <Tip label="Tamanho do board">
+                <Tip label={t.board.boardSize}>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm" className="text-ink hover:text-ink-hi"><Grid3x3 />{bs.w}×{bs.h}</Button>
                   </DropdownMenuTrigger>
                 </Tip>
                 <DropdownMenuContent align="end" className="font-mono">
-                  <DropdownMenuLabel className="text-xs uppercase tracking-widest text-ink">Tamanho do board</DropdownMenuLabel>
+                  <DropdownMenuLabel className="text-xs uppercase tracking-widest text-ink">{t.board.boardSize}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {BOARD_SIZES.map(b => (
+                  {BOARD_SIZES.map((b, i) => (
                     <DropdownMenuItem key={b.name} disabled={b.w < need.w || b.h < need.h} onSelect={() => setBoard(b.w, b.h)}>
-                      <span className="flex-1">{b.name}</span>
+                      <span className="flex-1">{t.sizes[i] ?? b.name}</span>
                       <span className={cn('text-xs', b.w === bs.w && b.h === bs.h ? 'text-glow' : 'text-ink')}>{b.w}×{b.h}</span>
                     </DropdownMenuItem>
                   ))}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={e => { e.preventDefault(); setBoard(bs.w + 8, bs.h + 5); }} disabled={bs.w + 8 > 256}>Aumentar +8×5</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={e => { e.preventDefault(); setBoard(bs.w + 8, bs.h + 5); }} disabled={bs.w + 8 > 256}>{t.board.grow}</DropdownMenuItem>
                   <DropdownMenuItem onSelect={e => { e.preventDefault(); setBoard(Math.max(need.w, 16, bs.w - 8), Math.max(need.h, 10, bs.h - 5)); }}
-                    disabled={bs.w - 8 < Math.max(need.w, 16) && bs.h - 5 < Math.max(need.h, 10)}>Diminuir −8×5</DropdownMenuItem>
+                    disabled={bs.w - 8 < Math.max(need.w, 16) && bs.h - 5 < Math.max(need.h, 10)}>{t.board.shrink}</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               <ToggleGroup type="single" size="sm" variant="outline" value={iso ? 'iso' : '2d'}
@@ -627,13 +737,24 @@ export default function Simulator() {
                 <ToggleGroupItem value="iso" className="px-2.5 text-xs">ISO</ToggleGroupItem>
               </ToggleGroup>
               <Separator orientation="vertical" className="mx-1 !h-5" />
-              <Tip label="Desfazer (ctrl+z)"><Button variant="ghost" size="icon-sm" onClick={undo} disabled={!past.current.length}><Undo2 /></Button></Tip>
-              <Tip label="Refazer (ctrl+shift+z)"><Button variant="ghost" size="icon-sm" onClick={redo} disabled={!future.current.length}><Redo2 /></Button></Tip>
-              <Tip label={paused ? 'Retomar clocks' : 'Pausar clocks'}><Button variant="ghost" size="icon-sm" onClick={() => setPaused(p => !p)}>{paused ? <Play /> : <Pause />}</Button></Tip>
-              <Tip label="Apagar seleção (delete)"><Button variant="ghost" size="icon-sm" onClick={removeSel} disabled={!sel}><Trash2 /></Button></Tip>
-              <Tip label="Limpar board"><Button variant="ghost" size="icon-sm" onClick={clearAll} disabled={!circ.comps.length}><Eraser /></Button></Tip>
-              <Tip label="Copiar link do circuito"><Button variant="ghost" size="icon-sm" onClick={share}><Link2 /></Button></Tip>
-              <GlowPicker glow={glow} setGlow={setGlow} className="max-md:hidden" />
+              <Tip label={t.board.undo}><Button variant="ghost" size="icon-sm" onClick={undo} disabled={!past.current.length}><Undo2 /></Button></Tip>
+              <Tip label={t.board.redo}><Button variant="ghost" size="icon-sm" onClick={redo} disabled={!future.current.length}><Redo2 /></Button></Tip>
+              <Tip label={paused ? t.board.resumeClocks : t.board.pauseClocks}><Button variant="ghost" size="icon-sm" onClick={() => setPaused(p => !p)}>{paused ? <Play /> : <Pause />}</Button></Tip>
+              <Tip label={t.board.deleteSel}><Button variant="ghost" size="icon-sm" onClick={removeSel} disabled={!sel}><Trash2 /></Button></Tip>
+              <Tip label={t.board.clear}><Button variant="ghost" size="icon-sm" onClick={clearAll} disabled={!circ.comps.length}><Eraser /></Button></Tip>
+              <Tip label={t.board.copyLink}><Button variant="ghost" size="icon-sm" onClick={share}><Link2 /></Button></Tip>
+              <Tip label={t.board.truthTable}>
+                <Button variant={tableOpen ? 'secondary' : 'ghost'} size="icon-sm" onClick={() => setTableOpen(o => !o)} aria-pressed={tableOpen}><Table2 /></Button>
+              </Tip>
+              <GlowPicker glow={glow} setGlow={setGlow} label={t.board.glow} className="max-md:hidden" />
+              {authEnabled && !challenge && (
+                <Tip label={user ? t.board.save : t.board.signInToSave}>
+                  <Button variant="ghost" size="sm" className="text-ink hover:text-ink-hi" onClick={() => save()} disabled={saving}>
+                    <Save style={dirty ? { color: 'var(--glow)' } : undefined} /><span className="hidden lg:inline">{saving ? t.board.saving : t.board.save}</span>
+                  </Button>
+                </Tip>
+              )}
+              <AccountMenu />
             </div>
           </header>
 
@@ -641,7 +762,7 @@ export default function Simulator() {
           <div ref={stageRef} data-stage className="relative min-h-0 flex-1 overflow-hidden">
             <svg ref={svgRef} className="board-svg absolute inset-0 h-full w-full outline-none" viewBox={viewBox}
               role="img" tabIndex={0}
-              aria-label="Board lógica: arraste peças do menu para o board, puxe fios de um pino de saída para um de entrada e clique nas chaves para ligar."
+              aria-label={t.board.ariaBoard}
               onPointerDown={onSvgPointerDown}
               style={{ cursor: drag?.type === 'pan' ? 'grabbing' : wiring ? 'crosshair' : 'default' }}>
               <defs>
@@ -661,7 +782,7 @@ export default function Simulator() {
                   </g>
                 ))}
                 <text className="board-label" x={bs.w + 4.1} y={bs.h + 5.95} textAnchor="end" style={{ fontSize: 0.32, letterSpacing: 0.06 }}>
-                  BOARD LÓGICA · {bs.w}×{bs.h}
+                  {t.brand.toUpperCase()} · {bs.w}×{bs.h}
                 </text>
               </g>
 
@@ -747,7 +868,7 @@ export default function Simulator() {
                     return (
                       <circle key={`${c.id}${side}${i}`} data-pin={`${c.id}:${side}:${i}`}
                         className={cn('hot-pin', cand && 'cand', isSrc && 'src')} cx={px} cy={py} r={0.42}>
-                        <title>{pinTitle(c.kind, side, i)}</title>
+                        <title>{pinTitle(t, c.kind, side, i)}</title>
                       </circle>
                     );
                   };
@@ -758,24 +879,26 @@ export default function Simulator() {
 
             {!circ.comps.length && (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6 text-center text-[13px] tracking-[0.12em] text-ink uppercase">
-                arraste uma peça do menu para o board
+                {t.board.emptyHint}
               </div>
             )}
             {drag?.type === 'move' && drag.moved && (
               <div className={cn('pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-md border px-3 py-1.5 text-xs',
                 movingToDock ? 'border-destructive bg-destructive text-white' : 'border-edge bg-background/90 text-ink')}>
-                {movingToDock ? 'solte para remover' : 'solte no menu de peças para remover'}
+                {movingToDock ? t.board.dropToRemove : t.board.dropOnMenu}
               </div>
             )}
+            {challenge && <ChallengeCard challenge={challenge} circ={circ} onReset={() => { const c = starterCircuit(challenge); mem.current = {}; commit(c); requestAnimationFrame(() => fitTo(c, pr, sizeRef.current, true)); }} />}
+            {tableOpen && <TruthTablePanel circ={circ} onClose={() => setTableOpen(false)} />}
             {toast && (
               <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-md border border-edge bg-background/90 px-3 py-1.5 text-xs text-ink-hi">
                 {toast}
               </div>
             )}
             <div className="absolute right-3 bottom-3 flex flex-col gap-1 rounded-lg border border-edge bg-panel/90 p-1">
-              <Tip label="Aproximar" side="left"><Button variant="ghost" size="icon-sm" onClick={() => zoomAt(1.25)}><ZoomIn /></Button></Tip>
-              <Tip label="Afastar" side="left"><Button variant="ghost" size="icon-sm" onClick={() => zoomAt(0.8)}><ZoomOut /></Button></Tip>
-              <Tip label="Ver o board inteiro" side="left"><Button variant="ghost" size="icon-sm" onClick={() => fitTo(circ, pr, size, true)}><Maximize /></Button></Tip>
+              <Tip label={t.board.zoomIn} side="left"><Button variant="ghost" size="icon-sm" onClick={() => zoomAt(1.25)}><ZoomIn /></Button></Tip>
+              <Tip label={t.board.zoomOut} side="left"><Button variant="ghost" size="icon-sm" onClick={() => zoomAt(0.8)}><ZoomOut /></Button></Tip>
+              <Tip label={t.board.fit} side="left"><Button variant="ghost" size="icon-sm" onClick={() => fitTo(circ, pr, size, true)}><Maximize /></Button></Tip>
             </div>
           </div>
 
@@ -787,23 +910,23 @@ export default function Simulator() {
         </figure>
 
         {/* element dock */}
-        <nav data-dock aria-label="Peças"
+        <nav data-dock aria-label={t.board.partsTitle}
           className={cn('hidden shrink-0 gap-2 md:flex overflow-x-auto rounded-[18px] border border-edge bg-panel p-2 transition-colors',
             movingToDock && 'border-destructive bg-destructive/10')}
           style={{ touchAction: 'pan-x' }}>
-          {PALETTE.map(k => (
+          {palette.map(k => (
             <button key={k} type="button" onPointerDown={e => startNew(k, e)}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); addAt(k, null); } }}
               className="group flex w-[86px] shrink-0 cursor-grab flex-col items-center gap-1 rounded-xl border border-transparent px-1 pt-1 pb-1.5 text-[10.5px] tracking-[0.08em] text-ink uppercase transition-colors select-none hover:border-edge hover:bg-accent hover:text-ink-hi active:cursor-grabbing"
-              title={`Arraste para o board: ${SPECS[k].name}`}>
+              title={t.board.dragToBoard(t.parts[k])}>
               <PartIcon kind={k} />
-              <span className="whitespace-nowrap">{SPECS[k].name}</span>
+              <span className="whitespace-nowrap">{t.parts[k]}</span>
             </button>
           ))}
         </nav>
 
         {/* mobile: the dock is a drawer pulled up from this handle */}
-        <button type="button" data-dock aria-label="Abrir menu de peças"
+        <button type="button" data-dock aria-label={t.board.openParts}
           className={cn('flex shrink-0 flex-col items-center gap-1.5 rounded-[18px] border border-edge bg-panel px-4 pt-2 pb-2.5 text-[11px] tracking-[0.12em] text-ink uppercase transition-colors md:hidden',
             movingToDock && 'border-destructive bg-destructive/10 text-ink-hi')}
           style={{ touchAction: 'none' }}
@@ -812,43 +935,44 @@ export default function Simulator() {
           onPointerUp={() => { if (swipeY.current !== null) setPartsOpen(true); swipeY.current = null; }}
           onPointerCancel={() => { swipeY.current = null; }}>
           <span className="h-1.5 w-12 rounded-full bg-muted" style={{ background: 'var(--line)' }} />
-          <span>{movingToDock ? 'solte para remover' : 'peças · puxe para cima'}</span>
+          <span>{movingToDock ? t.board.dropToRemove : t.board.partsPullUp}</span>
         </button>
         <Drawer open={partsOpen} onOpenChange={setPartsOpen}>
           <DrawerContent className="border-edge bg-panel font-mono">
             <DrawerHeader className="pb-1">
-              <DrawerTitle className="text-[13px] font-normal tracking-[0.14em] text-ink-hi uppercase">Peças</DrawerTitle>
-              <DrawerDescription className="text-xs text-ink">Toque para colocar no board ou arraste até o lugar.</DrawerDescription>
+              <DrawerTitle className="text-[13px] font-normal tracking-[0.14em] text-ink-hi uppercase">{t.board.partsTitle}</DrawerTitle>
+              <DrawerDescription className="text-xs text-ink">{t.board.partsDesc}</DrawerDescription>
             </DrawerHeader>
             <div className="grid grid-cols-4 gap-1 overflow-y-auto px-3 pb-2">
-              {PALETTE.map(k => (
+              {palette.map(k => (
                 <button key={k} type="button" data-vaul-no-drag onPointerDown={e => startNew(k, e)}
                   className="flex flex-col items-center gap-1 rounded-xl border border-transparent px-0.5 pt-1 pb-1.5 text-[10px] tracking-[0.06em] text-ink uppercase select-none active:border-edge active:bg-accent"
                   style={{ touchAction: 'none' }}>
                   <PartIcon kind={k} className="h-[44px] w-[70px]" />
-                  <span className="whitespace-nowrap">{SPECS[k].name}</span>
+                  <span className="whitespace-nowrap">{t.parts[k]}</span>
                 </button>
               ))}
             </div>
             <div className="flex items-center justify-between gap-3 border-t border-edge px-4 pt-3 pb-5 text-[11px] tracking-[0.12em] text-ink uppercase">
-              <span>Cor do brilho</span>
-              <GlowPicker glow={glow} setGlow={setGlow} />
+              <span>{t.board.glow}</span>
+              <GlowPicker glow={glow} setGlow={setGlow} label={t.board.glow} />
             </div>
           </DrawerContent>
         </Drawer>
         </div>
+        <SaveDialog open={saveOpen} onOpenChange={setSaveOpen} used={used} onSubmit={createNamed} />
       </main>
     </TooltipProvider>
   );
 }
 
-function GlowPicker({ glow, setGlow, className }: { glow: string; setGlow: (g: string) => void; className?: string }) {
+function GlowPicker({ glow, setGlow, label, className }: { glow: string; setGlow: (g: string) => void; label: string; className?: string }) {
   return (
-    <Tip label="Cor do brilho">
+    <Tip label={label}>
       <Button variant="ghost" size="icon-sm" asChild className={className}>
         <label className="relative cursor-pointer">
           <Palette style={{ color: 'var(--glow)' }} />
-          <input type="color" className="absolute inset-0 cursor-pointer opacity-0" aria-label="Cor do brilho"
+          <input type="color" className="absolute inset-0 cursor-pointer opacity-0" aria-label={label}
             value={glow} onChange={e => setGlow(e.target.value)} />
         </label>
       </Button>
@@ -859,28 +983,21 @@ function GlowPicker({ glow, setGlow, className }: { glow: string; setGlow: (g: s
 function Tip({ label, children, side = 'bottom' }: { label: string; children: React.ReactNode; side?: 'top' | 'bottom' | 'left' | 'right' }) {
   return (
     <Tooltip>
-      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipTrigger asChild aria-label={label}>{children}</TooltipTrigger>
       <TooltipContent side={side} className="font-mono">{label}</TooltipContent>
     </Tooltip>
   );
 }
 
-function hintFor(kind: Kind) {
-  switch (kind) {
-    case 'switch': return 'clique na chave para ligar e desligar';
-    case 'button': return 'segure o botão para enviar 1';
-    case 'clock': return 'clique no clock para mudar a frequência';
-    case 'led': return 'clique no led para trocar a cor';
-    case 'dff': return 'guarda D na subida do clk';
-    case 'seg7': return 'mostra em hex os bits 1 2 4 8';
-    default: return 'arraste para mover · solte no menu para remover';
-  }
+function hintFor(t: Dict, kind: Kind) {
+  const h = t.board.hints;
+  return kind in h ? h[kind as keyof typeof h] : h.other;
 }
 
-function pinTitle(kind: Kind, side: Side, i: number) {
+function pinTitle(t: Dict, kind: Kind, side: Side, i: number) {
   const s = SPECS[kind];
   const names = side === 'in' ? s.inNames : s.outNames;
-  return `${side === 'in' ? 'entrada' : 'saída'}${names ? ' ' + names[i] : ''}`;
+  return `${side === 'in' ? t.board.input : t.board.output}${names ? ' ' + names[i] : ''}`;
 }
 
 

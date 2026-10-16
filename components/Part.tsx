@@ -161,6 +161,7 @@ export function Part({ pr, c, st, cls = '', tag }: { pr: Proj; c: Comp; st: Part
       const ct = pr.P(x + 1, y + 1, zt)[1];
       return (
         <g className={cls} style={style}>
+          {tag && <Top pr={pr} x={x} y={y} z={0}><text className="plabel tag" x={0.1} y={0.42} style={{ fontSize: 0.34 }}>{tag}</text></Top>}
           <Box pr={pr} x={x + 0.55} y={y + 0.55} z={0} w={0.9} d={0.9} h={zb} r={0.12} />
           <g className={`ledg ${lit ? 'hot' : ''}`} filter={lit ? 'url(#glow)' : undefined}>
             {pr.iso && <path className="face" d={`M${cx - rx},${ct} L${cx - rx},${cb} A${rx},${ry} 0 0 0 ${cx + rx},${cb} L${cx + rx},${ct} Z`} />}
