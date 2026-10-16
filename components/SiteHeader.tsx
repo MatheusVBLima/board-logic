@@ -4,15 +4,16 @@ import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { AccountMenu } from '@/components/AccountMenu';
+import { PrimaryNav } from '@/components/PrimaryNav';
 import { useI18n } from '@/lib/i18n/client';
 
-/** Sticky top bar of the guide, challenges, projects and login pages: breadcrumb on the left, account menu on the right. */
+/** Shared header: breadcrumb, public navigation and account controls. */
 export function SiteHeader({ title }: { title: string }) {
   const { t, href } = useI18n();
   return (
     <header className="sticky top-0 z-10 border-b border-edge bg-background/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <nav aria-label="Breadcrumb" className="min-w-0">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
+        <nav aria-label="Breadcrumb" className="min-w-0 flex-1">
           <ol className="flex min-w-0 items-center gap-2 text-[13px] tracking-[0.14em] uppercase">
             <li>
               <Link href={href('/')} className="flex items-center gap-3 text-ink transition-colors hover:text-ink-hi">
@@ -24,7 +25,8 @@ export function SiteHeader({ title }: { title: string }) {
             <li aria-current="page" className="truncate text-ink-hi">{title}</li>
           </ol>
         </nav>
-        <AccountMenu showLearn showBoard />
+        <PrimaryNav className="order-last w-full lg:order-none lg:w-auto" />
+        <AccountMenu />
       </div>
     </header>
   );

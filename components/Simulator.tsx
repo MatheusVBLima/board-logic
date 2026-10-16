@@ -22,6 +22,7 @@ import { makeProj, type Proj } from '@/lib/iso';
 import { hexValue, simulate, type Memory, type SimResult } from '@/lib/sim';
 import { Box, Pads, Part, leadPaths, type PartState } from '@/components/Part';
 import { AccountMenu } from '@/components/AccountMenu';
+import { PrimaryNav } from '@/components/PrimaryNav';
 import { ChallengeCard } from '@/components/ChallengeCard';
 import { LearnPanel } from '@/components/LearnPanel';
 import { SaveDialog } from '@/components/SaveDialog';
@@ -33,7 +34,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { Logo } from '@/components/Logo';
 
@@ -666,12 +666,12 @@ export default function Simulator() {
         <LearnPanel open={learnOpen} onClose={() => setLearnOpen(false)} onAdd={k => addAt(k, null)} />
         <div className="flex min-w-0 flex-1 flex-col gap-3">
         <figure className="relative m-0 flex min-h-0 flex-1 flex-col rounded-[22px] border border-edge bg-panel">
-          {/* top caption + toolbar */}
-          <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 pt-3 sm:px-6 sm:pt-4">
-            <div className="flex min-w-0 items-center gap-3 text-[13px] tracking-[0.14em] text-ink-hi uppercase">
+          {/* Navigation stays outside the circuit controls. */}
+          <header className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 pt-3 sm:px-6 sm:pt-4">
+            <div className="flex min-w-0 flex-1 items-center gap-3 text-[13px] tracking-[0.14em] text-ink-hi uppercase">
               <a href={href('/')} className="flex items-center gap-3">
                 <Logo />
-                <span className={cn(project && 'max-sm:hidden')}>{t.brand}</span>
+                <span className="max-sm:sr-only">{t.brand}</span>
               </a>
               {project && (
                 <DropdownMenu>
@@ -689,14 +689,15 @@ export default function Simulator() {
                 </DropdownMenu>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-1">
-              <Button variant={learnOpen ? 'secondary' : 'ghost'} size="sm" className="text-ink hover:text-ink-hi" onClick={() => setLearnOpen(o => !o)}>
-                <GraduationCap /><span className="hidden sm:inline">{t.nav.learn}</span>
+            <PrimaryNav className="order-last w-full lg:order-none lg:w-auto" />
+            <div className="order-last flex w-full items-center gap-1 lg:order-none lg:w-auto">
+              <Button variant={learnOpen ? 'secondary' : 'ghost'} size="sm" className="text-ink hover:text-ink-hi" aria-label={t.board.partReference} aria-expanded={learnOpen} aria-controls="part-reference-panel" onClick={() => setLearnOpen(o => !o)}>
+                <GraduationCap /><span className="text-xs">{t.board.partReference}</span>
               </Button>
               {!challenge && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="text-ink hover:text-ink-hi"><BookOpen /><span className="hidden sm:inline">{t.board.examples}</span></Button>
+                    <Button variant="ghost" size="sm" className="text-ink hover:text-ink-hi" aria-label={t.board.examples}><BookOpen /><span className="text-xs">{t.board.examples}</span></Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="font-mono">
                     <DropdownMenuLabel className="text-xs uppercase tracking-widest text-ink">{t.board.readyCircuits}</DropdownMenuLabel>
@@ -707,6 +708,14 @@ export default function Simulator() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
+            </div>
+            <AccountMenu />
+          </header>
+
+          <fieldset className="mx-4 mt-3 mb-2 min-w-0 shrink-0 rounded-xl border border-edge bg-background/75 px-2 pb-2 sm:mx-6" data-circuit-tools>
+            <legend className="ml-1 rounded-md border border-edge bg-panel px-3 py-1 text-[11px] text-ink-hi">{t.board.circuitTools}</legend>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <div role="group" aria-label={t.board.viewControls} className="flex items-center gap-1 rounded-lg bg-panel p-1">
               <DropdownMenu>
                 <Tip label={t.board.boardSize}>
                   <DropdownMenuTrigger asChild>
@@ -733,27 +742,30 @@ export default function Simulator() {
                 <ToggleGroupItem value="2d" className="px-2.5 text-xs">2D</ToggleGroupItem>
                 <ToggleGroupItem value="iso" className="px-2.5 text-xs">ISO</ToggleGroupItem>
               </ToggleGroup>
-              <Separator orientation="vertical" className="mx-1 !h-5" />
+              </div>
+              <div role="group" aria-label={t.board.editControls} className="flex items-center gap-1 rounded-lg bg-panel p-1">
               <Tip label={t.board.undo}><Button variant="ghost" size="icon-sm" onClick={undo} disabled={!past.current.length}><Undo2 /></Button></Tip>
               <Tip label={t.board.redo}><Button variant="ghost" size="icon-sm" onClick={redo} disabled={!future.current.length}><Redo2 /></Button></Tip>
               <Tip label={paused ? t.board.resumeClocks : t.board.pauseClocks}><Button variant="ghost" size="icon-sm" onClick={() => setPaused(p => !p)}>{paused ? <Play /> : <Pause />}</Button></Tip>
               <Tip label={t.board.deleteSel}><Button variant="ghost" size="icon-sm" onClick={removeSel} disabled={!sel}><Trash2 /></Button></Tip>
               <Tip label={t.board.clear}><Button variant="ghost" size="icon-sm" onClick={clearAll} disabled={!circ.comps.length}><Eraser /></Button></Tip>
+              </div>
+              <div role="group" aria-label={t.board.inspectControls} className="flex items-center gap-1 rounded-lg bg-panel p-1">
               <Tip label={t.board.copyLink}><Button variant="ghost" size="icon-sm" onClick={share}><Link2 /></Button></Tip>
               <Tip label={t.board.truthTable}>
                 <Button variant={tableOpen ? 'secondary' : 'ghost'} size="icon-sm" onClick={() => setTableOpen(o => !o)} aria-pressed={tableOpen}><Table2 /></Button>
               </Tip>
               <GlowPicker glow={glow} setGlow={setGlow} label={t.board.glow} className="max-md:hidden" />
+              </div>
               {authEnabled && !challenge && (
                 <Tip label={user ? t.board.save : t.board.signInToSave}>
-                  <Button variant="ghost" size="sm" className="text-ink hover:text-ink-hi" onClick={() => save()} disabled={saving}>
-                    <Save style={dirty ? { color: 'var(--glow)' } : undefined} /><span className="hidden lg:inline">{saving ? t.board.saving : t.board.save}</span>
+                  <Button variant="outline" size="sm" className="ml-auto h-10 border-edge bg-panel text-ink-hi" onClick={() => save()} disabled={saving}>
+                    <Save style={dirty ? { color: 'var(--glow)' } : undefined} /><span>{saving ? t.board.saving : t.board.save}</span>
                   </Button>
                 </Tip>
               )}
-              <AccountMenu />
             </div>
-          </header>
+          </fieldset>
 
           <div data-challenge-layout className="flex min-h-0 flex-1 flex-col lg:flex-row">
           {challenge && <ChallengeCard key={challenge.id} challenge={challenge} circ={circ} onReset={() => { const c = starterCircuit(challenge); mem.current = {}; commit(c); requestAnimationFrame(() => fitTo(c, pr, sizeRef.current, true)); }} />}
@@ -942,7 +954,7 @@ function Tip({ label, children, side = 'bottom' }: { label: string; children: Re
   return (
     <Tooltip>
       <TooltipTrigger asChild aria-label={label}>{children}</TooltipTrigger>
-      <TooltipContent side={side} className="font-mono">{label}</TooltipContent>
+      <TooltipContent side={side} data-circuit-tooltip className="pointer-events-none font-mono">{label}</TooltipContent>
     </Tooltip>
   );
 }

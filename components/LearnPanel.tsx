@@ -23,7 +23,7 @@ export function LearnPanel({ open, onClose, onAdd }: { open: boolean; onClose: (
         open ? 'translate-x-0 opacity-100 md:w-[288px]' : 'pointer-events-none -translate-x-[calc(100%+24px)] opacity-0 md:-mr-3 md:w-0 md:translate-x-0',
       )}
       aria-hidden={!open} inert={!open}>
-      <aside aria-label={t.nav.learn}
+      <aside id="part-reference-panel" aria-label={t.nav.learn}
         className="flex h-full max-w-[calc(100vw-24px)] flex-col rounded-[22px] border border-edge bg-panel shadow-2xl shadow-black/60 md:shadow-none"
         style={{ width: W }}>
         <div className="flex items-center justify-between px-4 pt-3.5 pb-1">

@@ -4,6 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import { getDict } from '@/lib/i18n/server';
 import { LandingBoard } from '@/components/LandingBoard';
 import { AccountMenu } from '@/components/AccountMenu';
+import { PrimaryNav } from '@/components/PrimaryNav';
 import { SharedLinkRedirect } from '@/components/SharedLinkRedirect';
 import { Logo } from '@/components/Logo';
 
@@ -23,16 +24,12 @@ export default async function Landing({ params }: PageProps<'/[lang]'>) {
       <SharedLinkRedirect to={board} />
       <div className="landing-rails" aria-hidden><span /><span /><span /></div>
 
-      <header className="relative mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
-        <Link href={`/${locale}`} className="landing-brand flex items-center gap-2.5">
-          <Logo className="size-6" />{t.brand}
+      <header className="relative mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-5 py-5 sm:px-8">
+        <Link href={`/${locale}`} className="landing-brand flex min-w-0 flex-1 items-center gap-2.5">
+          <Logo className="size-6" /><span className="max-sm:sr-only">{t.brand}</span>
         </Link>
-        <nav className="flex items-center gap-1 sm:gap-5">
-          <Link href={`/${locale}/learn`} className="landing-link max-sm:hidden">{t.nav.learn}</Link>
-          <Link href={`/${locale}/challenges`} className="landing-link max-sm:hidden">{t.nav.challenges}</Link>
-          <Link href={board} className="landing-link max-sm:hidden">{t.nav.board}</Link>
-          <div className="landing-account"><AccountMenu /></div>
-        </nav>
+        <PrimaryNav className="order-last w-full lg:order-none lg:w-auto" />
+        <div className="landing-account"><AccountMenu /></div>
       </header>
 
       <main className="relative mx-auto max-w-6xl px-5 pb-16 sm:px-8">

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Check, CircuitBoard, FolderOpen, GraduationCap, Languages, LogIn, LogOut, Trophy, User } from 'lucide-react';
+import { Check, FolderOpen, Languages, LogIn, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -36,9 +36,9 @@ function LanguageMenu() {
 
 /**
  * Language switch plus the account control shared by the board and the other pages: a Sign in button
- * when signed out, a menu with projects, pages and Sign out when signed in.
+ * when signed out, a menu with projects and Sign out when signed in.
  */
-export function AccountMenu({ className, showLearn = false, showBoard = false }: { className?: string; showLearn?: boolean; showBoard?: boolean }) {
+export function AccountMenu({ className }: { className?: string }) {
   const { t, href } = useI18n();
   const user = useUser();
   const router = useRouter();
@@ -66,9 +66,6 @@ export function AccountMenu({ className, showLearn = false, showBoard = false }:
             <DropdownMenuLabel className="truncate text-xs text-ink">{user.email}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild><Link href={href('/projects')}><FolderOpen />{t.nav.projects}</Link></DropdownMenuItem>
-            {showBoard && <DropdownMenuItem asChild><Link href={href('/board')}><CircuitBoard />{t.nav.board}</Link></DropdownMenuItem>}
-            {showLearn && <DropdownMenuItem asChild><Link href={href('/learn')}><GraduationCap />{t.nav.guide}</Link></DropdownMenuItem>}
-            <DropdownMenuItem asChild><Link href={href('/challenges')}><Trophy />{t.nav.challenges}</Link></DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={signOut}><LogOut />{t.nav.signOut}</DropdownMenuItem>
           </DropdownMenuContent>

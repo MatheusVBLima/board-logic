@@ -15,6 +15,7 @@ const pt: Dict = {
     loginTitle: 'Entrar · Board Lógica',
   },
   nav: {
+    mainNavigation: 'Navegação principal',
     board: 'Board',
     learn: 'Aprender',
     guide: 'Guia',
@@ -42,6 +43,11 @@ const pt: Dict = {
     counter: 'Contador 4 bits',
   },
   board: {
+    partReference: 'Guia de peças',
+    circuitTools: 'Ferramentas do circuito',
+    viewControls: 'Tamanho e visualização',
+    editControls: 'Edição e simulação',
+    inspectControls: 'Análise e compartilhamento',
     examples: 'Exemplos',
     readyCircuits: 'Circuitos prontos',
     boardSize: 'Tamanho do board',

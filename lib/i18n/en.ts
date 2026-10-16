@@ -15,6 +15,7 @@ const en = {
     loginTitle: 'Sign in · Logic Board',
   },
   nav: {
+    mainNavigation: 'Main navigation',
     board: 'Board',
     learn: 'Learn',
     guide: 'Guide',
@@ -42,6 +43,11 @@ const en = {
     counter: '4-bit counter',
   } as Record<string, string>,
   board: {
+    partReference: 'Part reference',
+    circuitTools: 'Circuit tools',
+    viewControls: 'Board size and view',
+    editControls: 'Editing and simulation',
+    inspectControls: 'Inspect and share',
     examples: 'Examples',
     readyCircuits: 'Ready-made circuits',
     boardSize: 'Board size',

@@ -90,9 +90,10 @@ export function PartPalette({ kinds, restricted, mobileOpen, onMobileOpenChange,
       <div className="relative z-30 hidden shrink-0 md:block" onKeyDown={event => {
         if (event.key === 'Escape' && desktopOpen) { event.preventDefault(); event.stopPropagation(); closeDesktop(); }
       }}>
-        {desktopOpen && <section id={`${panelId}-desktop`} aria-label={label(active)} data-part-panel data-dock
+        <section id={`${panelId}-desktop`} aria-label={label(active)} aria-hidden={!desktopOpen} inert={!desktopOpen} data-open={desktopOpen} data-part-panel data-dock
           className="parts-popover">
-          <div className="flex items-start justify-between gap-4 border-b border-edge px-4 py-3">
+          <div key={active} className="parts-category-content">
+          <div className="flex shrink-0 items-start justify-between gap-4 border-b border-edge px-4 py-3">
             <div>
               <h2 className="text-[13px] text-ink-hi">{label(active)}</h2>
               <p className="mt-1 text-[11px] text-ink">{t.board.partsDesc}</p>
@@ -100,7 +101,8 @@ export function PartPalette({ kinds, restricted, mobileOpen, onMobileOpenChange,
             <Button variant="ghost" size="icon-sm" aria-label={t.board.closeParts} onClick={closeDesktop}><X /></Button>
           </div>
           <div className="parts-piece-grid">{pieces(false)}</div>
-        </section>}
+          </div>
+        </section>
         <nav data-dock aria-label={t.board.partsCategories}
           className={cn('parts-categories rounded-[18px] border border-edge bg-panel p-2', removing && 'border-destructive bg-destructive/10')}>
           {categoryButtons(false)}
@@ -127,8 +129,10 @@ export function PartPalette({ kinds, restricted, mobileOpen, onMobileOpenChange,
             {categoryButtons(true)}
           </nav>
           <section id={`${panelId}-mobile`} aria-label={label(active)} data-part-panel className="min-h-0 overflow-y-auto overscroll-contain">
+            <div key={active} className="parts-category-content">
             <h2 className="px-5 pt-4 text-[12px] text-ink-hi">{label(active)}</h2>
             <div className="parts-piece-grid parts-piece-grid-mobile">{pieces(true)}</div>
+            </div>
           </section>
           {children}
         </DrawerContent>
