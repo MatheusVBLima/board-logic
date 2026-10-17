@@ -99,7 +99,7 @@ export function minBoard(c: Circuit) {
   let w = 0, h = 0;
   for (const k of c.comps) {
     const s = SPECS[k.kind];
-    w = Math.max(w, k.x + s.w + 1); h = Math.max(h, k.y + s.d);
+    w = Math.max(w, k.x + s.w - xSlack(k.kind)[1]); h = Math.max(h, k.y + s.d);
   }
   return { w, h };
 }
@@ -163,9 +163,19 @@ export function overlaps(circ: Circuit, kind: Kind, x: number, y: number, ignore
   });
 }
 
-export function clampPos(kind: Kind, x: number, y: number, b = { w: BOARD_W, h: BOARD_H }): [number, number] {
+/**
+ * How far past the usable grid a part may sit on each side. The hole grid spans
+ * x -1..w+1: a side with pins keeps them on the outermost column, a side without
+ * pins lets the body itself reach it.
+ */
+function xSlack(kind: Kind): [number, number] {
   const s = SPECS[kind];
-  return [Math.max(1, Math.min(b.w - s.w - 1, x)), Math.max(0, Math.min(b.h - s.d, y))];
+  return [s.ins.length ? 0 : 1, s.outs.length ? 0 : 1];
+}
+
+export function clampPos(kind: Kind, x: number, y: number, b = { w: BOARD_W, h: BOARD_H }): [number, number] {
+  const s = SPECS[kind], [l, r] = xSlack(kind);
+  return [Math.max(-l, Math.min(b.w - s.w + r, x)), Math.max(0, Math.min(b.h - s.d, y))];
 }
 
 // ---------- sharing ----------
