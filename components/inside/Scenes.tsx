@@ -2,7 +2,7 @@
 
 import type { CSSProperties, ReactNode } from 'react';
 import { makeProj } from '@/lib/iso';
-import { bits4, coreOps, fanRpm, lastAddr, pcOf, type Machine, type SceneId } from '@/lib/inside';
+import { bits4, coreOps, fanRpm, lastAddr, pcOf, scanRow, type Machine, type SceneId } from '@/lib/inside';
 import type { Dict } from '@/lib/i18n/en';
 import { Box } from '@/components/Part';
 import { pressable, type OpenHandler } from './CircuitView';
@@ -13,7 +13,7 @@ const Front = ({ x, y, z, children }: { x: number; y: number; z: number; childre
 const Side = ({ x, y, z, children }: { x: number; y: number; z: number; children: ReactNode }) => <g transform={pr.SIDE(x, y, z)}>{children}</g>;
 
 export type Names = Dict['inside']['names'];
-export interface SceneProps { m: Machine; onOpen: OpenHandler; n: Names; open: (what: string) => string; onBit?: (i: number) => void }
+export interface SceneProps { m: Machine; onOpen: OpenHandler; n: Names; open: (what: string) => string; onBit?: (i: number) => void; onKey?: (k: number) => void }
 
 /** SVG framing a block of the scene floor (x0..x1, y0..y1) up to height zt. */
 function Frame({ x0, y0, x1, y1, zt, label, children }: { x0: number; y0: number; x1: number; y1: number; zt: number; label: string; children: ReactNode }) {
@@ -30,6 +30,12 @@ function Opens({ seg, label, onOpen, children }: { seg: string; label: string; o
 
 const Label = ({ x, y, children, size = 0.34, live }: { x: number; y: number; children: ReactNode; size?: number; live?: boolean }) =>
   <text className={`plabel ${live ? 'live' : ''}`} x={x} y={y} style={{ fontSize: size }}>{children}</text>;
+
+/** What you typed on your own keyboard, as a terminal line with a blinking cursor. */
+const Typed = ({ x, y, size, m }: { x: number; y: number; size: number; m: Machine }) =>
+  <text className="plabel live" x={x} y={y} style={{ fontSize: size, fontFamily: 'var(--font-mono, monospace)', whiteSpace: 'pre' }}>
+    {`> ${m.text}${m.ticks % 2 ? '_' : ' '}`}
+  </text>;
 
 /** Four bit cells, most significant on the left, lit when set. */
 function Bits({ x, y, n, size = 0.7, onBit }: { x: number; y: number; n: number; size?: number; onBit?: (i: number) => void }) {
@@ -99,22 +105,28 @@ export function ComputerScene({ m, onOpen, n, open }: SceneProps) {
   return (
     <Frame x0={-1} y0={-1} x1={14} y1={8} zt={6.4} label={n.computer}>
       <Box pr={pr} x={-1} y={-1} z={-0.45} w={15} d={9} h={0.45} r={0.8} cls="plate" />
-      <Box pr={pr} x={3.4} y={0.5} z={0} w={2.4} d={2} h={0.14} r={0.3} />
-      <Box pr={pr} x={4.2} y={1.1} z={0.14} w={0.8} d={0.35} h={1.3} />
-      <Box pr={pr} x={1} y={1.5} z={1.4} w={7.2} d={0.4} h={4.6} r={0.15} />
-      <Front x={1} y={1.9} z={6}>
-        <rect className="glass hot" x={0.3} y={0.3} width={6.6} height={3.7} rx={0.12} />
-        <Label x={0.7} y={0.85} size={0.32}>ACC = ACC + B</Label>
-        <text className="plabel live" x={0.7} y={2.55} style={{ fontSize: 1.5 }} filter="url(#soft-p)">{m.acc}</text>
-        <Label x={2.6} y={2.4} size={0.5} live>{m.acc.toString(2).padStart(4, '0')}</Label>
-        <Label x={0.7} y={3.5} size={0.32}>B = {m.b}  ·  PC = {pcOf(m)}</Label>
-      </Front>
-      <Box pr={pr} x={1.5} y={3.6} z={0} w={6} d={2} h={0.22} r={0.12} />
-      <Top x={1.5} y={3.6} z={0.22}>
-        {Array.from({ length: 4 }, (_, r) => Array.from({ length: 12 }, (_, c) => (
-          <rect key={`${r}.${c}`} className="detail" x={0.25 + c * 0.47} y={0.22 + r * 0.42} width={0.36} height={0.32} rx={0.05} />
-        )))}
-      </Top>
+      <Opens seg="monitor" label={open(n.monitor)} onOpen={onOpen}>
+        <Box pr={pr} x={3.4} y={0.5} z={0} w={2.4} d={2} h={0.14} r={0.3} />
+        <Box pr={pr} x={4.2} y={1.1} z={0.14} w={0.8} d={0.35} h={1.3} />
+        <Box pr={pr} x={1} y={1.5} z={1.4} w={7.2} d={0.4} h={4.6} r={0.15} />
+        <Front x={1} y={1.9} z={6}>
+          <rect className="glass hot" x={0.3} y={0.3} width={6.6} height={3.7} rx={0.12} />
+          <rect className="inside-ring" x={0.15} y={0.15} width={6.9} height={4} rx={0.18} />
+          <Label x={0.7} y={0.85} size={0.32}>ACC = ACC + B  ·  B = {m.b}</Label>
+          <text className="plabel live" x={0.7} y={2.55} style={{ fontSize: 1.5 }} filter="url(#soft-p)">{m.acc}</text>
+          <Label x={2.6} y={2.4} size={0.5} live>{m.acc.toString(2).padStart(4, '0')}</Label>
+          <Typed x={0.6} y={3.55} size={0.36} m={m} />
+        </Front>
+      </Opens>
+      <Opens seg="keyboard" label={open(n.keyboard)} onOpen={onOpen}>
+        <Box pr={pr} x={1.5} y={3.6} z={0} w={6} d={2} h={0.22} r={0.12} />
+        <Top x={1.5} y={3.6} z={0.22}>
+          <rect className="inside-ring" x={0.05} y={0.05} width={5.9} height={1.9} rx={0.15} />
+          {Array.from({ length: 4 }, (_, r) => Array.from({ length: 12 }, (_, c) => (
+            <rect key={`${r}.${c}`} className={(r * 4 + c - 8) === m.key && c >= 8 ? 'glass hot' : 'detail'} x={0.25 + c * 0.47} y={0.22 + r * 0.42} width={0.36} height={0.32} rx={0.05} />
+          )))}
+        </Top>
+      </Opens>
       <Opens seg="case" label={open(n.case)} onOpen={onOpen}>
         <Box pr={pr} x={9.5} y={0} z={0} w={2.6} d={5.6} h={5.6} r={0.2} />
         <Front x={9.5} y={5.6} z={5.6}>
@@ -508,7 +520,110 @@ export function PsuScene({ m, n }: SceneProps) {
   );
 }
 
+
+// ---------- monitor and keyboard ----------
+
+/** 5×7 pixel font for the hex digits, one string of five pixels per row. */
+const FONT = [
+  '01110 10001 10011 10101 11001 10001 01110', '00100 01100 00100 00100 00100 00100 01110',
+  '01110 10001 00001 00010 00100 01000 11111', '11110 00001 00001 01110 00001 00001 11110',
+  '00010 00110 01010 10010 11111 00010 00010', '11111 10000 11110 00001 00001 10001 01110',
+  '00110 01000 10000 11110 10001 10001 01110', '11111 00001 00010 00100 01000 01000 01000',
+  '01110 10001 10001 01110 10001 10001 01110', '01110 10001 10001 01111 00001 00010 01100',
+  '01110 10001 10001 11111 10001 10001 10001', '11110 10001 10001 11110 10001 10001 11110',
+  '01110 10001 10000 10000 10000 10001 01110', '11100 10010 10001 10001 10001 10010 11100',
+  '11111 10000 10000 11110 10000 10000 11111', '11111 10000 10000 11110 10000 10000 10000',
+].map(g => g.split(' '));
+
+/** One character as a grid of pixels; the row being scanned right now is brighter. */
+function Glyph({ x, y, v, cell, row }: { x: number; y: number; v: number; cell: number; row: number }) {
+  return (
+    <>
+      {FONT[v & 15].flatMap((line, r) => [...line].map((p, c) => (
+        <rect key={`${r}.${c}`} className={`glass ${p === '1' ? 'hot' : ''}`} x={x + c * cell} y={y + r * cell} width={cell * 0.86} height={cell * 0.86} rx={cell * 0.12}
+          style={p === '1' && r === row ? { fill: 'var(--glow-hi)' } : undefined} />
+      )))}
+    </>
+  );
+}
+
+/** Monitor: a pixel screen showing ACC and B, with its controller board pulled out in front. */
+export function MonitorScene({ m, onOpen, n, open }: SceneProps) {
+  const row = scanRow(m);
+  const cell = 0.45;
+  return (
+    <Frame x0={0} y0={2.5} x1={12} y1={11.4} zt={9.2} label={n.monitor}>
+      <Box pr={pr} x={0} y={2.5} z={-0.3} w={12} d={8.9} h={0.3} r={0.4} cls="plate" />
+      <Box pr={pr} x={3.5} y={2.8} z={0} w={5} d={2.4} h={0.15} r={0.3} />
+      <Box pr={pr} x={5.4} y={3.3} z={0.15} w={1.2} d={0.5} h={1.6} />
+      <Box pr={pr} x={0} y={3.9} z={1.6} w={12} d={0.5} h={7.4} r={0.2} />
+      <Front x={0} y={4.4} z={9}>
+        <rect className="face recess" x={0.4} y={0.4} width={11.2} height={6.6} rx={0.15} />
+        <Label x={1} y={1.2} size={0.4}>ACC</Label>
+        <Glyph x={1} y={1.6} v={m.acc} cell={cell} row={row} />
+        <Label x={6.2} y={1.2} size={0.4}>B</Label>
+        <Glyph x={6.2} y={1.6} v={m.b} cell={cell} row={row} />
+        <path className="trace on" d={`M0.6,${1.6 + (row + 0.43) * cell} H11.4`} opacity={0.5} />
+        <path className="detail" d="M0.6,5.2 H11.4" />
+        <Typed x={0.8} y={6.3} size={0.55} m={m} />
+      </Front>
+      <Top x={0} y={0} z={0}><path className="trace on" d="M6,5.8 V7" /></Top>
+      <Box pr={pr} x={0.5} y={7} z={0} w={11} d={4} h={0.2} r={0.15} />
+      <Top x={0.5} y={7} z={0.2}><path className={`trace ${m.ticks % 2 ? 'on' : ''}`} d="M3.7,1.9 H4.5 M6.9,1.9 H7.7" /></Top>
+      {([['video', 1.1, 7.5, 3, 2.9, n.video], ['line', 5, 7.8, 2.4, 2.4, n.line], ['scan', 8.2, 7.8, 2.6, 2.4, n.scan]] as const).map(([seg, x, y, w, d, name]) => (
+        <Opens key={seg} seg={seg} label={open(name)} onOpen={onOpen}>
+          <g className="chip"><Box pr={pr} x={x} y={y} z={0.2} w={w} d={d} h={0.35} r={0.08} /></g>
+          <Top x={x} y={y} z={0.55}>
+            <rect className="inside-ring" x={0.1} y={0.1} width={w - 0.2} height={d - 0.2} rx={0.15} />
+            <Label x={0.25} y={0.65} size={0.26}>{name}</Label>
+            {seg === 'video' && <Label x={0.25} y={2} size={0.9} live>{m.acc.toString(16).toUpperCase()}</Label>}
+            {seg === 'scan' && <Label x={0.25} y={1.8} size={0.7} live>{row}</Label>}
+          </Top>
+        </Opens>
+      ))}
+    </Frame>
+  );
+}
+
+/** Keyboard: click a hex key to type it into register B; the scan circuits are pulled out behind. */
+export function KeyboardScene({ m, onOpen, onKey, n, open }: SceneProps) {
+  return (
+    <Frame x0={0} y0={-5.2} x1={14} y1={5.8} zt={1} label={n.keyboard}>
+      <Box pr={pr} x={0.6} y={-5.2} z={0} w={12.4} d={3.8} h={0.2} r={0.15} cls="plate" />
+      <Top x={0} y={0} z={0}><path className="trace on" d="M7,-1.4 V0" /></Top>
+      <Top x={0.6} y={-5.2} z={0.2}><path className="trace on" d="M4.9,1.9 H6.4" /></Top>
+      {([['cols', 1.4, n.cols], ['rows', 6.4, n.rows]] as const).map(([seg, x, name]) => (
+        <Opens key={seg} seg={seg} label={open(name)} onOpen={onOpen}>
+          <g className="chip"><Box pr={pr} x={x} y={-4.6} z={0.2} w={3.4} d={2.6} h={0.35} r={0.08} /></g>
+          <Top x={x} y={-4.6} z={0.55}>
+            <rect className="inside-ring" x={0.1} y={0.1} width={3.2} height={2.4} rx={0.15} />
+            <Label x={0.25} y={0.7} size={0.26}>{name}</Label>
+            <Label x={0.25} y={1.9} size={0.6} live>{seg === 'cols' ? m.key & 3 : m.key >> 2}</Label>
+          </Top>
+        </Opens>
+      ))}
+      <Box pr={pr} x={0} y={0} z={0} w={14} d={5.6} h={0.5} r={0.3} />
+      {Array.from({ length: 4 }, (_, r) => Array.from({ length: 7 }, (_, c) => (
+        <Box key={`${r}.${c}`} pr={pr} x={0.4 + c * 1.15} y={0.4 + r * 1.25} z={0.5} w={0.95} d={1} h={0.25} r={0.1} />
+      )))}
+      {Array.from({ length: 16 }, (_, k) => {
+        const r = k >> 2, c = k & 3, x = 9 + c * 1.2, y = 0.4 + r * 1.25, on = k === m.key;
+        return (
+          <g key={k} className="inside-bit" {...pressable(`${n.key} ${k.toString(16).toUpperCase()}`, () => onKey?.(k))}>
+            <g className={on ? 'lit' : ''} filter={on ? 'url(#soft)' : undefined}>
+              <Box pr={pr} x={x} y={y} z={0.5} w={1} d={1} h={on ? 0.12 : 0.3} r={0.1} />
+            </g>
+            <Top x={x} y={y} z={on ? 0.62 : 0.8}>
+              <text className={`chip-txt ${on ? '' : 'on'}`} x={0.5} y={0.68} textAnchor="middle" style={{ fontSize: 0.5 }}>{k.toString(16).toUpperCase()}</text>
+            </Top>
+          </g>
+        );
+      })}
+    </Frame>
+  );
+}
+
 export const SCENE_VIEWS: Record<SceneId, (p: SceneProps) => ReactNode> = {
-  pc: ComputerScene, case: CaseScene, board: BoardScene, cpu: CpuScene, cooler: CoolerScene,
+  pc: ComputerScene, monitor: MonitorScene, keyboard: KeyboardScene, case: CaseScene, board: BoardScene, cpu: CpuScene, cooler: CoolerScene,
   gpu: GpuScene, gpucore: GpuCoreScene, ram: RamScene, ssd: SsdScene, psu: PsuScene,
 };

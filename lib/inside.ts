@@ -5,24 +5,43 @@
 import { newComp, type Circuit, type Comp, type Kind, type Wire } from './circuit.ts';
 import { simulate, type Memory, type SimResult } from './sim.ts';
 
-export type SceneId = 'pc' | 'case' | 'board' | 'cpu' | 'cooler' | 'gpu' | 'gpucore' | 'ram' | 'ssd' | 'psu';
-export type CircuitId = 'alu' | 'fa' | 'ha' | 'reg' | 'counter' | 'dec' | 'dff';
+export type SceneId = 'pc' | 'monitor' | 'keyboard' | 'case' | 'board' | 'cpu' | 'cooler' | 'gpu' | 'gpucore' | 'ram' | 'ssd' | 'psu';
+export type CircuitId = 'alu' | 'fa' | 'ha' | 'reg' | 'counter' | 'dec' | 'dff' | 'enc' | 'disp';
 export type LevelId = SceneId | CircuitId;
 
 /**
  * The machine the drawn levels show. On every clock tick the CPU adds B to the
- * accumulator and writes the result to the next of four RAM words.
+ * accumulator and writes the result to the next of four RAM words. The last key
+ * typed on the keyboard becomes B.
  */
-export interface Machine { acc: number; b: number; carry: number; ticks: number; ram: number[] }
+export interface Machine { acc: number; b: number; carry: number; ticks: number; ram: number[]; key: number; text: string }
 
-export const MACHINE0: Machine = { acc: 0, b: 3, carry: 0, ticks: 0, ram: [0, 0, 0, 0] };
+export const MACHINE0: Machine = { acc: 0, b: 3, carry: 0, ticks: 0, ram: [0, 0, 0, 0], key: 3, text: '' };
 
 export function tick(m: Machine): Machine {
   const sum = m.acc + m.b;
   const ram = [...m.ram];
   ram[m.ticks & 3] = sum & 15;
-  return { acc: sum & 15, b: m.b, carry: sum >> 4, ticks: m.ticks + 1, ram };
+  return { ...m, acc: sum & 15, carry: sum >> 4, ticks: m.ticks + 1, ram };
 }
+
+/** Typing a hex key on the keyboard loads it into register B. */
+export const typeKey = (m: Machine, k: number): Machine => ({ ...m, key: k & 15, b: k & 15 });
+/** Characters the screen keeps, the oldest dropping off the left. */
+export const SCREEN_CHARS = 28;
+/**
+ * A key from the real keyboard: every printable character goes on the screen, Backspace erases,
+ * and a hex digit also goes through the 16-key scan circuit into register B.
+ */
+export function typeChar(m: Machine, key: string): Machine {
+  if (key === 'Backspace') return { ...m, text: m.text.slice(0, -1) };
+  if ([...key].length !== 1) return m;
+  const text = (m.text + key).slice(-SCREEN_CHARS);
+  const hex = /^[0-9a-f]$/i.test(key) ? parseInt(key, 16) : -1;
+  return hex < 0 ? { ...m, text } : { ...typeKey(m, hex), text };
+}
+/** Pixel row the monitor is drawing right now (of the 7 in a character). */
+export const scanRow = (m: Machine) => m.ticks % 7;
 
 /** Program counter: counts the instructions run so far (4 bits). */
 export const pcOf = (m: Machine) => m.ticks & 15;
@@ -155,6 +174,27 @@ function dffCircuit(): Circuit {
   );
 }
 
+/** 4 → 2 encoder: the one key that is pressed becomes a 2-bit code, with two ORs. */
+function encCircuit(): Circuit {
+  return build([19, 13],
+    [
+      ['k0', 'switch', 1, 1], ['k1', 'switch', 1, 4], ['k2', 'switch', 1, 7], ['k3', 'switch', 1, 10],
+      ['b0', 'or', 10, 3], ['b1', 'or', 10, 8], ['l0', 'led', 16, 3], ['l1', 'led', 16, 8],
+    ],
+    [['k1', 0, 'b0', 0], ['k3', 0, 'b0', 1], ['k2', 0, 'b1', 0], ['k3', 0, 'b1', 1], ['b0', 0, 'l0', 0], ['b1', 0, 'l1', 0]],
+  );
+}
+
+/** Video controller: four bits in, the character they stand for out on a display. */
+function dispCircuit(): Circuit {
+  const parts: P[] = [['hex', 'seg7', 10, 3]], links: L[] = [];
+  for (let i = 0; i < 4; i++) {
+    parts.push([`v${i}`, 'switch', 1, 0.5 + 3 * i]);
+    links.push([`v${i}`, 0, 'hex', i]);
+  }
+  return build([14, 12], parts, links);
+}
+
 export interface CircuitLevel {
   make: () => Circuit;
   inputs: string[];                 // switch ids, in the order values are handed down
@@ -188,13 +228,17 @@ export const CIRCUITS: Record<CircuitId, CircuitLevel> = {
     gates: { nd: 'not', nclk: 'not', nq: 'not', m1: 'nand', m2: 'nand', m3: 'nand', m4: 'nand', s1: 'nand', s2: 'nand', s3: 'nand', s4: 'nand' },
     primeFrom: (_ins, out) => [[out[0] ?? 0, 0], [out[0] ?? 0, 1]],
   },
+  enc: { make: encCircuit, inputs: ['k0', 'k1', 'k2', 'k3'], outputs: ['l0', 'l1'], open: {}, gates: { b0: 'or', b1: 'or' } },
+  disp: { make: dispCircuit, inputs: ['v0', 'v1', 'v2', 'v3'], outputs: [], open: {}, gates: { hex: 'seg7' } },
 };
 
 export const isCircuitLevel = (l: LevelId): l is CircuitId => l in CIRCUITS;
 
 /** Drawn scenes: hash segment → level it opens, and parts that lead to a guide lesson. */
 export const SCENES: Record<SceneId, { open: Record<string, LevelId>; gates?: Record<string, Kind> }> = {
-  pc: { open: { case: 'case' } },
+  pc: { open: { monitor: 'monitor', keyboard: 'keyboard', case: 'case' } },
+  monitor: { open: { video: 'disp', line: 'dec', scan: 'counter' } },
+  keyboard: { open: { cols: 'dec', rows: 'enc' } },
   case: { open: { board: 'board', cooler: 'cooler', gpu: 'gpu', ram: 'ram', ssd: 'ssd', psu: 'psu' } },
   board: { open: { cpu: 'cpu', ram: 'ram' } },
   cpu: { open: { ctrl: 'dec', pc: 'counter', acc: 'reg', b: 'reg', alu: 'alu', cache: 'ram' }, gates: { clock: 'clock' } },
@@ -265,6 +309,15 @@ function fromScene(parent: SceneId, seg: string, m: Machine): { ins: number[]; p
       case 'pc': return { ins: [0], prime: [[0], ...pulses(pcOf(m))] };
       case 'ctrl': return { ins: [0, 0] };          // opcode 00: ADD, the only instruction this program uses
     }
+  }
+  if (parent === 'monitor') {
+    if (seg === 'video') return { ins: bits4(m.acc) };
+    if (seg === 'line') return { ins: [scanRow(m) & 1, (scanRow(m) >> 1) & 1] };
+    return { ins: [0], prime: [[0], ...pulses(scanRow(m))] };
+  }
+  if (parent === 'keyboard') {
+    if (seg === 'cols') return { ins: [m.key & 1, (m.key >> 1) & 1] };
+    return { ins: [0, 1, 2, 3].map(r => +(r === m.key >> 2)) };
   }
   if (parent === 'gpucore') {
     const [a, b] = coreOps(m, Number(seg.slice(4)));
