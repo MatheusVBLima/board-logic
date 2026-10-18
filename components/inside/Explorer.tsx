@@ -86,9 +86,10 @@ export function Explorer() {
 
   const open = useCallback((seg: string, el: Element) => {
     const cur = pathRef.current, top = cur[cur.length - 1];
+    // a gate is the bottom level: nothing to zoom into, so go straight to its lesson
     const gate = gateOf(top.level, seg);
+    if (gate) { location.assign(`${href('/learn')}#${gate}`); return; }
     focusOn(el);
-    if (gate) { animate('out', '', () => location.assign(`${href('/learn')}#${gate}`)); return; }
     const next = pathFromHash(`${hashOf(cur)}/${seg}`, mRef.current, cur);
     if (next.length === cur.length) return;
     animate('out', 'in', () => goTo(next));
