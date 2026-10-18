@@ -13,6 +13,8 @@ const pt: Dict = {
     challengesTitle: 'Desafios · Board Lógica',
     projectsTitle: 'Meus projetos · Board Lógica',
     loginTitle: 'Entrar · Board Lógica',
+    insideTitle: 'Por dentro · Board Lógica',
+    insideDescription: 'Abra um computador camada por camada, do gabinete até as portas lógicas, com cada nível funcionando ao vivo.',
   },
   nav: {
     mainNavigation: 'Navegação principal',
@@ -20,6 +22,7 @@ const pt: Dict = {
     learn: 'Aprender',
     guide: 'Guia',
     challenges: 'Desafios',
+    inside: 'Por dentro',
     projects: 'Meus projetos',
     signIn: 'Entrar',
     signUp: 'Criar conta',
@@ -234,6 +237,30 @@ const pt: Dict = {
   },
   og: {
     alt: 'Board Lógica: monte circuitos que brilham. Um meio somador com as chaves A e B acendendo o LED da soma.',
+  },
+  inside: {
+    path: 'Níveis',
+    back: 'Voltar',
+    level: 'Nível',
+    running: 'Rodando agora',
+    values: 'Valores',
+    inside: 'Abrir a seguir',
+    guide: 'lição',
+    soon: 'em breve',
+    open: (what: string) => `Abrir ${what}`,
+    later: 'Em breve: RAM até os flip-flops, um rack de servidor e uma máquina de escrever eletrônica.',
+    names: {
+      board: 'Placa-mãe', cpu: 'CPU', alu: 'ULA', ram: 'RAM', clock: 'Clock', io: 'E/S', post: 'POST',
+      acc: 'Acumulador', b: 'Registrador B', carry: 'Vai-um',
+    },
+    levels: {
+      pc: { title: 'Computador', body: 'Um computador bem simples rodando um único programa: a cada pulso do clock ele soma B ao acumulador e mostra o resultado na tela. Clique no gabinete para abrir.' },
+      board: { title: 'Placa-mãe', body: 'A placa-mãe liga as peças. O cristal de clock dita o ritmo, a CPU faz as contas, a RAM guardaria os dados e o display POST mostra o acumulador em hexadecimal. Clique na CPU.' },
+      cpu: { title: 'CPU', body: 'Dentro da CPU, dois registradores guardam números de 4 bits. A cada pulso, a ULA soma ACC + B e o resultado volta para o ACC. Clique nos bits de B para mudar o número somado, ou clique na ULA.' },
+      alu: { title: 'ULA', body: 'Esta ULA é um somador de 4 bits: quatro somadores completos em escada, um por bit, cada um passando o vai-um para o próximo. As chaves começam com os números que a CPU estava somando; mude-as para testar outros.' },
+      fa: { title: 'Somador completo', body: 'Um somador completo soma três bits: A, B e o vai-um que vem do bit anterior. São dois meios somadores e uma porta OR que junta os dois vai-uns.' },
+      ha: { title: 'Meio somador', body: 'O meio somador soma dois bits. A soma é um XOR (1 quando só uma entrada é 1) e o vai-um é um AND (1 quando as duas são 1). Abaixo daqui só há portas lógicas: clique numa para ver a lição dela.' },
+    },
   },
   notFound: 'Página não encontrada',
 };

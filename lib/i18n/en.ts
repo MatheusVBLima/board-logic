@@ -13,6 +13,8 @@ const en = {
     challengesTitle: 'Challenges · Logic Board',
     projectsTitle: 'My projects · Logic Board',
     loginTitle: 'Sign in · Logic Board',
+    insideTitle: 'Inside · Logic Board',
+    insideDescription: 'Open a computer one layer at a time, from the case down to the logic gates, with every level running live.',
   },
   nav: {
     mainNavigation: 'Main navigation',
@@ -20,6 +22,7 @@ const en = {
     learn: 'Learn',
     guide: 'Guide',
     challenges: 'Challenges',
+    inside: 'Inside',
     projects: 'My projects',
     signIn: 'Sign in',
     signUp: 'Create account',
@@ -235,6 +238,30 @@ const en = {
   },
   og: {
     alt: 'Logic Board: build circuits that glow. A half adder with switches A and B lighting the Sum LED.',
+  },
+  inside: {
+    path: 'Levels',
+    back: 'Back',
+    level: 'Level',
+    running: 'Running now',
+    values: 'Values',
+    inside: 'Open next',
+    guide: 'lesson',
+    soon: 'coming soon',
+    open: (what: string) => `Open ${what}`,
+    later: 'Coming next: RAM down to flip-flops, a server rack and an electronic typewriter.',
+    names: {
+      board: 'Motherboard', cpu: 'CPU', alu: 'ALU', ram: 'RAM', clock: 'Clock', io: 'I/O', post: 'POST',
+      acc: 'Accumulator', b: 'Register B', carry: 'Carry',
+    },
+    levels: {
+      pc: { title: 'Computer', body: 'A tiny computer running one program: on every clock tick it adds B to the accumulator and shows the result on screen. Click the case to open it.' },
+      board: { title: 'Motherboard', body: 'The motherboard connects the parts. The clock crystal sets the pace, the CPU does the maths, the RAM would hold data and the POST display shows the accumulator in hex. Click the CPU.' },
+      cpu: { title: 'CPU', body: 'Inside the CPU two registers hold 4-bit numbers. On every tick the ALU adds ACC + B and the result goes back into ACC. Click the bits of B to change what gets added, or click the ALU.' },
+      alu: { title: 'ALU', body: 'This ALU is a 4-bit adder: four full adders in a staircase, one per bit, each passing its carry to the next. The switches start with the numbers the CPU was adding; flip them to try others.' },
+      fa: { title: 'Full adder', body: 'A full adder adds three bits: A, B and the carry coming from the bit before. It is two half adders plus an OR gate that merges their carries.' },
+      ha: { title: 'Half adder', body: 'A half adder adds two bits. The sum is an XOR (1 when exactly one input is 1) and the carry is an AND (1 when both are). Below this there are only logic gates: click one to read its lesson.' },
+    },
   },
   notFound: 'Page not found',
 };

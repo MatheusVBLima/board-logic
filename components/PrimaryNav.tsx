@@ -12,6 +12,7 @@ export function PrimaryNav({ className }: { className?: string }) {
     { path: '/board', label: t.nav.board },
     { path: '/learn', label: t.nav.guide },
     { path: '/challenges', label: t.nav.challenges },
+    { path: '/inside', label: t.nav.inside },
   ];
 
   return (
@@ -21,7 +22,7 @@ export function PrimaryNav({ className }: { className?: string }) {
         const active = pathname === target || pathname?.startsWith(`${target}/`);
         return (
           <a key={link.path} href={target} aria-current={active ? 'page' : undefined}
-            className={cn('flex min-h-8 flex-1 items-center justify-center rounded-md px-3 py-1.5 text-xs transition-colors hover:bg-accent hover:text-ink-hi focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow lg:flex-none',
+            className={cn('flex min-h-8 flex-1 items-center justify-center rounded-md px-2 py-1.5 text-xs whitespace-nowrap sm:px-3 transition-colors hover:bg-accent hover:text-ink-hi focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow lg:flex-none',
               active ? 'bg-accent text-ink-hi shadow-[inset_0_-2px_0_var(--glow)]' : 'text-ink')}>
             {link.label}
           </a>
