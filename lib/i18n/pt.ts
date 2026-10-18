@@ -240,7 +240,6 @@ const pt: Dict = {
   },
   inside: {
     path: 'Níveis',
-    back: 'Voltar',
     level: 'Nível',
     running: 'Rodando agora',
     values: 'Valores',
@@ -270,7 +269,7 @@ const pt: Dict = {
     },
     levels: {
       monitor: { title: 'Monitor', body: 'A tela é uma grade de pixels. O contador de varredura diz qual linha está sendo desenhada, o decodificador de linhas acende só essa linha e o controlador de vídeo decide quais pixels formam o caractere. A placa controladora está puxada para a frente: clique em um chip. Digite no seu teclado e o texto aparece na última linha.' },
-      keyboard: { title: 'Teclado', body: 'Digite no seu próprio teclado e o texto aparece na tela; as teclas 0 a 9 e A a F também passam pelo circuito. Ou clique numa tecla hexadecimal: ela vai para o registrador B e a CPU passa a somar esse número. Por baixo, o teclado varre as colunas uma por vez (um decodificador) e codifica qual linha respondeu (um codificador), formando o código da tecla.' },
+      keyboard: { title: 'Teclado', body: 'Digite no seu próprio teclado e o texto aparece na tela; as teclas 0 a 9 e A a F também passam pelo circuito. A tecla que você aperta acende aqui, e dá para clicar nas teclas também. Um dígito hexadecimal vai para o registrador B e a CPU passa a somar esse número. Por baixo, o teclado varre as colunas uma por vez (um decodificador) e codifica qual linha respondeu (um codificador), formando o código da tecla.' },
       enc: { title: 'Codificador', body: 'O contrário do decodificador: das quatro entradas, a que estiver ligada vira um código de 2 bits. São só duas portas OR. Ele começa com a linha da tecla que você digitou.' },
       disp: { title: 'Controlador de vídeo', body: 'Quatro bits entram e o caractere que eles representam aparece no display. É o mesmo trabalho que o controlador faz para cada caractere da tela, escolhendo quais pixels acendem. Ele começa com o valor do ACC.' },
       pc: { title: 'Computador', body: 'Um computador bem simples rodando um único programa: a cada pulso do clock ele soma B ao acumulador, guarda o resultado na RAM e mostra na tela. Digite no seu teclado para escrever na tela. Clique no gabinete, no monitor ou no teclado para abrir.' },

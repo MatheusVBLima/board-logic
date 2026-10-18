@@ -1,14 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ChevronRight, CornerDownRight } from 'lucide-react';
+import { ChevronRight, CornerDownRight } from 'lucide-react';
 import { useI18n } from '@/lib/i18n/client';
 import {
-  CIRCUITS, MACHINE0, ROOT, SCENES, bits4, coreOps, fanRpm, gateOf, hashOf, isCircuitLevel, lastAddr, num, pathFromHash, pcOf, scanRow, settle, tick, typeChar, typeKey, withInputs,
+  CIRCUITS, MACHINE0, ROOT, SCENES, bits4, coreOps, fanRpm, gateOf, hashOf, isCircuitLevel, lastAddr, num, pathFromHash, pcOf, scanRow, settle, tick, typeChar, withInputs,
   type LevelId, type Machine, type Stop,
 } from '@/lib/inside';
 import { hexValue } from '@/lib/sim';
-import { Button } from '@/components/ui/button';
 import { CircuitView } from './CircuitView';
 import { SCENE_VIEWS } from './Scenes';
 
@@ -102,26 +101,45 @@ export function Explorer() {
     animate('back-out', 'back-in', () => goTo(cur.slice(0, depth + 1)));
   }, [animate, goTo]);
 
+  // keys held down on the real keyboard, lit on the drawn one
+  const [held, setHeld] = useState<ReadonlySet<string>>(new Set());
+  const hold = useCallback((code: string, on: boolean) => setHeld(h => {
+    if (h.has(code) === on) return h;
+    const next = new Set(h);
+    if (on) next.add(code); else next.delete(code);
+    return next;
+  }), []);
+
+  /** One keystroke into the machine: the screen gets the character, a hex digit also goes to B. */
+  const typeIn = useCallback((key: string) => {
+    const prev = mRef.current, next = typeChar(prev, key);
+    if (next === prev) return false;
+    setM(x => typeChar(x, key));
+    // a scan circuit of the keyboard on screen shows the new key straight away
+    const cur = pathRef.current;
+    if (next.key !== prev.key && cur.some(s => s.level === 'keyboard') && isCircuitLevel(cur[cur.length - 1].level)) {
+      setPath(pathFromHash(location.hash, next, []));
+    }
+    return true;
+  }, []);
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
+    const down = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { up(pathRef.current.length - 2); return; }
       // the real keyboard types into the machine, unless it is driving a button or a field
       const el = e.target as HTMLElement | null;
       if (e.ctrlKey || e.metaKey || e.altKey || el?.closest('input, textarea, select, [contenteditable]')) return;
       if ((e.key === ' ' || e.key === 'Enter') && el?.closest('[role=button], button, a')) return;
-      const next = typeChar(mRef.current, e.key);
-      if (next === mRef.current) return;
-      if (e.key === ' ' || e.key === 'Backspace') e.preventDefault();
-      setM(x => typeChar(x, e.key));
-      // a scan circuit of the keyboard on screen shows the new key straight away
-      const cur = pathRef.current;
-      if (next.key !== mRef.current.key && cur.some(s => s.level === 'keyboard') && isCircuitLevel(cur[cur.length - 1].level)) {
-        setPath(pathFromHash(location.hash, next, []));
-      }
+      hold(e.code, true);
+      if (typeIn(e.key) && (e.key === ' ' || e.key === 'Backspace')) e.preventDefault();
     };
-    addEventListener('keydown', onKey);
-    return () => removeEventListener('keydown', onKey);
-  }, [up]);
+    const upKey = (e: KeyboardEvent) => hold(e.code, false);
+    const clear = () => setHeld(new Set());
+    addEventListener('keydown', down);
+    addEventListener('keyup', upKey);
+    addEventListener('blur', clear);
+    return () => { removeEventListener('keydown', down); removeEventListener('keyup', upKey); removeEventListener('blur', clear); };
+  }, [up, hold, typeIn]);
 
   const toggle = (id: string) => {
     if (!circuit) return;
@@ -133,7 +151,12 @@ export function Explorer() {
     });
   };
   const flipB = (i: number) => setM(x => ({ ...x, b: x.b ^ (1 << i) }));
-  const press = (k: number) => setM(x => typeKey(x, k));
+  /** A click on a drawn key: it lights for a moment and types like the real one. */
+  const press = (code: string, key: string) => {
+    hold(code, true);
+    setTimeout(() => hold(code, false), 180);
+    typeIn(key);
+  };
 
   const title = (s: Stop) => {
     const base = s.seg.replace(/\d+$/, ''), d = s.seg.slice(base.length);
@@ -204,15 +227,12 @@ export function Explorer() {
     drawing = <CircuitView circ={withInputs(circuit, here.ins)} sim={here.state.sim} tags={TAGS[here.level] ?? {}} openable={openable} onToggle={toggle} onOpen={open} label={title(here)} />;
   } else {
     const View = SCENE_VIEWS[here.level as keyof typeof SCENE_VIEWS];
-    drawing = <View m={m} onOpen={open} n={T.names} open={T.open} onBit={flipB} onKey={press} />;
+    drawing = <View m={m} onOpen={open} n={T.names} open={T.open} onBit={flipB} onKey={press} held={held} />;
   }
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-5 sm:px-6">
       <nav aria-label={T.path} className="flex min-h-9 flex-wrap items-center gap-2">
-        <Button variant="outline" size="sm" className="border-edge text-ink-hi" disabled={path.length < 2} onClick={() => up(path.length - 2)}>
-          <ArrowLeft />{T.back}
-        </Button>
         <ol className="flex min-w-0 flex-wrap items-center gap-1 text-[12px] tracking-[0.08em] uppercase">
           {path.map((s, i) => (
             <li key={i} className="flex items-center gap-1">
