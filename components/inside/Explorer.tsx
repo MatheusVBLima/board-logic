@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ChevronRight, CornerDownRight } from 'lucide-react';
 import { useI18n } from '@/lib/i18n/client';
 import {
-  CIRCUITS, MACHINE0, ROOT, SCENES, bits4, coreOps, fanRpm, gateOf, hashOf, isCircuitLevel, lastAddr, num, pathFromHash, pcOf, settle, tick, withInputs,
+  CIRCUITS, MACHINE0, ROOT, SCENES, bits4, coreOps, fanRpm, gateOf, hashOf, isCircuitLevel, lastAddr, num, pathFromHash, pcOf, scanRow, settle, tick, typeChar, typeKey, withInputs,
   type LevelId, type Machine, type Stop,
 } from '@/lib/inside';
 import { hexValue } from '@/lib/sim';
@@ -26,6 +26,8 @@ const TAGS: Partial<Record<LevelId, Record<string, string>>> = {
   counter: { clk: 'CK' },
   dec: { a0: 'A0', a1: 'A1', l0: 'Y0', l1: 'Y1', l2: 'Y2', l3: 'Y3' },
   dff: { d: 'D', clk: 'CK', q: 'Q', qn: 'Q̄' },
+  enc: { k0: 'K0', k1: 'K1', k2: 'K2', k3: 'K3', l0: 'C0', l1: 'C1' },
+  disp: { v0: '1', v1: '2', v2: '4', v3: '8' },
 };
 
 const bin = (bits: number[]) => [...bits].reverse().join('');
@@ -101,7 +103,22 @@ export function Explorer() {
   }, [animate, goTo]);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') up(pathRef.current.length - 2); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { up(pathRef.current.length - 2); return; }
+      // the real keyboard types into the machine, unless it is driving a button or a field
+      const el = e.target as HTMLElement | null;
+      if (e.ctrlKey || e.metaKey || e.altKey || el?.closest('input, textarea, select, [contenteditable]')) return;
+      if ((e.key === ' ' || e.key === 'Enter') && el?.closest('[role=button], button, a')) return;
+      const next = typeChar(mRef.current, e.key);
+      if (next === mRef.current) return;
+      if (e.key === ' ' || e.key === 'Backspace') e.preventDefault();
+      setM(x => typeChar(x, e.key));
+      // a scan circuit of the keyboard on screen shows the new key straight away
+      const cur = pathRef.current;
+      if (next.key !== mRef.current.key && cur.some(s => s.level === 'keyboard') && isCircuitLevel(cur[cur.length - 1].level)) {
+        setPath(pathFromHash(location.hash, next, []));
+      }
+    };
     addEventListener('keydown', onKey);
     return () => removeEventListener('keydown', onKey);
   }, [up]);
@@ -116,6 +133,7 @@ export function Explorer() {
     });
   };
   const flipB = (i: number) => setM(x => ({ ...x, b: x.b ^ (1 << i) }));
+  const press = (k: number) => setM(x => typeKey(x, k));
 
   const title = (s: Stop) => {
     const base = s.seg.replace(/\d+$/, ''), d = s.seg.slice(base.length);
@@ -151,6 +169,8 @@ export function Explorer() {
       values = [['A', b4(num(a))], ['B', b4(num(b))], ['A + B', `${outs[4]}${bin(outs.slice(0, 4))} = ${num(outs)}`]];
     } else if (here.level === 'reg') {
       values = [['D', b4(num(ins.slice(0, 4)))], ['CK', String(ins[4])], ['Q', b4(num(outs))]];
+    } else if (here.level === 'disp') {
+      values = [['V', b4(num(ins))], ['HEX', num(ins).toString(16).toUpperCase()]];
     } else if (here.level === 'counter') {
       values = [['CK', String(ins[0])], ['Q', b4(hexValue(sim.inp.hex ?? []))]];
     } else {
@@ -159,6 +179,10 @@ export function Explorer() {
         ...circuit.outputs.map((id, i) => [tags[id] ?? id, String(outs[i])] as [string, string]),
       ];
     }
+  } else if (here.level === 'keyboard') {
+    values = [[T.key, m.key.toString(16).toUpperCase()], [T.code, b4(m.key)], [T.segs.rows, String(m.key >> 2)], [T.segs.cols, String(m.key & 3)], ['B', b4(m.b)], [T.typed, m.text.slice(-12) || '…']];
+  } else if (here.level === 'monitor') {
+    values = [['ACC', `${m.acc.toString(16).toUpperCase()} (${b4(m.acc)})`], ['B', `${m.b.toString(16).toUpperCase()} (${b4(m.b)})`], [T.row, `${scanRow(m)} / 7`], [T.typed, m.text.slice(-12) || '…']];
   } else if (here.level === 'cooler') {
     values = [[T.rpm, `${fanRpm(m)}`], ['ACC', b4(m.acc)]];
   } else if (here.level === 'gpu' || here.level === 'gpucore') {
@@ -180,7 +204,7 @@ export function Explorer() {
     drawing = <CircuitView circ={withInputs(circuit, here.ins)} sim={here.state.sim} tags={TAGS[here.level] ?? {}} openable={openable} onToggle={toggle} onOpen={open} label={title(here)} />;
   } else {
     const View = SCENE_VIEWS[here.level as keyof typeof SCENE_VIEWS];
-    drawing = <View m={m} onOpen={open} n={T.names} open={T.open} onBit={flipB} />;
+    drawing = <View m={m} onOpen={open} n={T.names} open={T.open} onBit={flipB} onKey={press} />;
   }
 
   return (

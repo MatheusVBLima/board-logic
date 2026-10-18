@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CIRCUITS, MACHINE0, SCENES, bits4, num, pathFromHash, hashOf, runLevel, settle, startLevel, tick, type Machine } from '../lib/inside.ts';
+import { CIRCUITS, MACHINE0, SCENES, bits4, num, pathFromHash, hashOf, runLevel, scanRow, settle, startLevel, tick, typeChar, typeKey, type Machine } from '../lib/inside.ts';
 import { hexValue } from '../lib/sim.ts';
 
 const after = (n: number, m: Machine = MACHINE0) => { for (let i = 0; i < n; i++) m = tick(m); return m; };
@@ -106,4 +106,43 @@ test('every scene target resolves to a level', () => {
   assert.deepEqual(gpu.map(s => s.level), ['pc', 'case', 'gpu', 'gpucore', 'alu']);
   assert.deepEqual(gpu[4].ins, [...bits4(5), ...bits4(2)]);
   assert.equal(pathFromHash('case/board/nope/cpu', MACHINE0).length, 3);
+});
+
+test('keyboard: typing a key loads B, and its encoder and column decoder see that key', () => {
+  const m = typeKey(MACHINE0, 9);   // row 2, column 1
+  assert.equal(m.b, 9);
+  assert.equal(tick(m).acc, 9);
+  const enc = pathFromHash('keyboard/rows', m)[2];
+  assert.deepEqual(enc.ins, [0, 0, 1, 0]);
+  assert.deepEqual(CIRCUITS.enc.outputs.map(id => enc.state!.sim.inp[id][0]), [0, 1]);
+  const cols = pathFromHash('keyboard/cols', m)[2];
+  assert.deepEqual(CIRCUITS.dec.outputs.map(id => cols.state!.sim.inp[id][0]), [0, 1, 0, 0]);
+});
+
+test('encoder turns each pressed key into its 2-bit code', () => {
+  for (let k = 0; k < 4; k++) {
+    const r = runLevel(CIRCUITS.enc, [0, 1, 2, 3].map(i => +(i === k)));
+    assert.deepEqual([r.inp.l0[0], r.inp.l1[0]], [k & 1, k >> 1]);
+  }
+});
+
+test('monitor: the video controller shows the accumulator and the scan counter its row', () => {
+  const m = after(4);
+  const video = pathFromHash('monitor/video', m)[2];
+  assert.equal(hexValue(video.state!.sim.inp.hex), m.acc);
+  const scan = pathFromHash('monitor/scan', m)[2];
+  assert.equal(hexValue(scan.state!.sim.inp.hex), scanRow(m));
+  assert.equal(pathFromHash('monitor/scan/dff0/nope', m).length, 4);
+});
+
+test('the real keyboard types on the screen; hex digits also reach B', () => {
+  let m = MACHINE0;
+  for (const k of ['O', 'l', 'a', ' ', 'Shift', 'Backspace', '!']) m = typeChar(m, k);
+  assert.equal(m.text, 'Ola!');
+  assert.equal(m.b, 10);    // the "a" was a hex digit
+  assert.equal(m.key, 10);
+  m = typeChar(m, 'z');
+  assert.equal(m.b, 10);    // not on the hex pad
+  for (let i = 0; i < 40; i++) m = typeChar(m, 'x');
+  assert.equal(m.text.length, 28);
 });
