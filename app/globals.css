@@ -255,3 +255,32 @@
   [data-challenge-workspace] { height: auto; min-height: 100dvh; }
   [data-challenge-workspace] [data-stage] { flex: none; height: 320px; min-height: 280px; }
 }
+
+/* ---------- inside: open a computer level by level ---------- */
+.inside-stage {
+  height: clamp(20rem, calc(100dvh - 13rem), 44rem);
+  background: radial-gradient(circle at 1px 1px, #ffffff12 1px, transparent 0) 0 0 / 18px 18px, var(--bg);
+}
+@media (max-width: 1023px) { .inside-stage { height: auto; aspect-ratio: 4 / 3; } }
+.inside-open { cursor: pointer; outline: none; }
+.inside-ring { fill: none; stroke: var(--glow); stroke-width: 1; vector-effect: non-scaling-stroke; opacity: .35; stroke-dasharray: 4 3; transition: opacity .2s; }
+.inside-open:hover .inside-ring, .inside-open:focus-visible .inside-ring { opacity: 1; stroke-dasharray: none; }
+.inside-open:hover .face, .inside-open:focus-visible .face { stroke: var(--glow); }
+.inside-ghost { fill: color-mix(in srgb, var(--glow) 18%, transparent); stroke: var(--glow); stroke-width: 1; vector-effect: non-scaling-stroke; opacity: .55; }
+.inside-open:hover .inside-ghost { opacity: 1; }
+.inside-bit { cursor: pointer; outline: none; }
+.inside-bit:hover .glass, .inside-bit:focus-visible .glass { stroke: var(--glow-hi); }
+.preview-switch:focus-visible { outline: none; }
+.preview-switch:focus-visible .face.top { stroke: var(--glow); }
+.inside-zoom { transition: transform .28s cubic-bezier(.4, 0, .2, 1), opacity .28s; }
+.inside-zoom[data-phase="out"] { transform: scale(2.6); opacity: 0; }
+.inside-zoom[data-phase="in"] { animation: inside-in .28s cubic-bezier(.2, 0, .2, 1); }
+.inside-zoom[data-phase="back-out"] { transform: scale(.55); opacity: 0; }
+.inside-zoom[data-phase="back-in"] { animation: inside-back-in .28s cubic-bezier(.2, 0, .2, 1); }
+@keyframes inside-in { from { transform: scale(.55); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes inside-back-in { from { transform: scale(1.8); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .inside-zoom { transition: none; animation: none !important; } }
+.inside-blade { fill: var(--deck); stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.inside-spin { transform-box: fill-box; transform-origin: center; animation: inside-spin var(--spin, 1.4s) linear infinite; }
+@keyframes inside-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .inside-spin { animation: none; } }
