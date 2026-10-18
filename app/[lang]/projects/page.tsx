@@ -8,11 +8,10 @@ export async function generateMetadata({ params }: PageProps<'/[lang]/projects'>
   return { title: t.meta.projectsTitle };
 }
 
-export default async function ProjectsPage({ params }: PageProps<'/[lang]/projects'>) {
-  const { t } = await getDict(params);
+export default function ProjectsPage() {
   return (
     <div className="min-h-dvh overflow-y-auto" style={{ height: '100dvh' }}>
-      <SiteHeader title={t.nav.projects} />
+      <SiteHeader />
       <main className="mx-auto max-w-4xl px-4 py-8 pb-24 sm:px-6">
         <ProjectList />
       </main>

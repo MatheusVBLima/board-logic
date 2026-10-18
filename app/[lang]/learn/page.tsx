@@ -43,7 +43,7 @@ export default async function LearnPage({ params }: PageProps<'/[lang]/learn'>) 
 
   return (
     <div className="min-h-dvh overflow-y-auto" style={{ height: '100dvh' }}>
-      <SiteHeader title={t.nav.learn} />
+      <SiteHeader />
 
       <div className="mx-auto flex max-w-6xl gap-10 px-4 py-8 sm:px-6">
         <LearnToc label={t.learn.contents} groups={[

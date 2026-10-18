@@ -8,11 +8,10 @@ export async function generateMetadata({ params }: PageProps<'/[lang]/inside'>):
   return { title: t.meta.insideTitle, description: t.meta.insideDescription };
 }
 
-export default async function InsidePage({ params }: PageProps<'/[lang]/inside'>) {
-  const { t } = await getDict(params);
+export default function InsidePage() {
   return (
     <div className="min-h-dvh overflow-y-auto" style={{ height: '100dvh' }}>
-      <SiteHeader title={t.nav.inside} />
+      <SiteHeader />
       <main className="pb-16"><Explorer /></main>
     </div>
   );

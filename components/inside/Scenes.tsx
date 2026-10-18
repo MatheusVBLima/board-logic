@@ -13,7 +13,7 @@ const Front = ({ x, y, z, children }: { x: number; y: number; z: number; childre
 const Side = ({ x, y, z, children }: { x: number; y: number; z: number; children: ReactNode }) => <g transform={pr.SIDE(x, y, z)}>{children}</g>;
 
 export type Names = Dict['inside']['names'];
-export interface SceneProps { m: Machine; onOpen: OpenHandler; n: Names; open: (what: string) => string; onBit?: (i: number) => void; onKey?: (k: number) => void }
+export interface SceneProps { m: Machine; onOpen: OpenHandler; n: Names; open: (what: string) => string; onBit?: (i: number) => void; onKey?: (code: string, key: string) => void; held?: ReadonlySet<string> }
 
 /** SVG framing a block of the scene floor (x0..x1, y0..y1) up to height zt. */
 function Frame({ x0, y0, x1, y1, zt, label, children }: { x0: number; y0: number; x1: number; y1: number; zt: number; label: string; children: ReactNode }) {
@@ -99,8 +99,35 @@ const fins = (n: number, w: number, h: number, vertical = true) =>
 
 // ---------- computer ----------
 
+// ---------- keyboard layout ----------
+
+interface Key { code: string; label: string; key: string; x: number; y: number; w: number }
+const U = 1.06;
+/** A compact ABNT-ish layout, one row per line: [left offset, keys]; a key is "label" or [code, label, key, width]. */
+const ROWS: [number, (string | [string, string, string, number])[]][] = [
+  [0.3, ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', ['Minus', '-', '-', 1], ['Equal', '=', '=', 1], ['Backspace', '⌫', 'Backspace', 1.8]]],
+  [0.3, [['Tab', 'TAB', 'Tab', 1.4], 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', ['BracketLeft', '[', '[', 1], ['BracketRight', ']', ']', 1]]],
+  [0.3, [['CapsLock', 'CAPS', 'CapsLock', 1.7], 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ['Semicolon', 'Ç', 'ç', 1], ['Enter', '↵', 'Enter', 1.8]]],
+  [0.3, [['ShiftLeft', '⇧', 'Shift', 2.2], 'Z', 'X', 'C', 'V', 'B', 'N', 'M', ['Comma', ',', ',', 1], ['Period', '.', '.', 1], ['Slash', '/', '/', 1], ['ShiftRight', '⇧', 'Shift', 1.9]]],
+  [3.5, [['Space', '', ' ', 7.2]]],
+];
+export const KEYS: Key[] = ROWS.flatMap(([x0, row], r) => {
+  let x = x0;
+  return row.map(k => {
+    const [code, label, key, w] = typeof k === 'string'
+      ? [/\d/.test(k) ? `Digit${k}` : `Key${k}`, k, k.toLowerCase(), 1] : k;
+    const out = { code, label, key, x, y: 0.3 + r * U, w: w * U - 0.14 };
+    x += w * U;
+    return out;
+  });
+});
+/** Keyboard width and depth, from the layout. */
+const KB_W = Math.max(...KEYS.map(k => k.x + k.w)) + 0.3, KB_D = 0.3 + ROWS.length * U + 0.16;
+/** Hex value of a key on the 16-key scan pad, or -1 if it is not one. */
+const hexOf = (k: Key) => (/^[0-9a-f]$/.test(k.key) ? parseInt(k.key, 16) : -1);
+
 /** Desk with a monitor, keyboard and the tower; the tower opens the case. */
-export function ComputerScene({ m, onOpen, n, open }: SceneProps) {
+export function ComputerScene({ m, onOpen, n, open, held }: SceneProps) {
   const blink = m.ticks % 2 === 1;
   return (
     <Frame x0={-1} y0={-1} x1={14} y1={8} zt={6.4} label={n.computer}>
@@ -122,9 +149,10 @@ export function ComputerScene({ m, onOpen, n, open }: SceneProps) {
         <Box pr={pr} x={1.5} y={3.6} z={0} w={6} d={2} h={0.22} r={0.12} />
         <Top x={1.5} y={3.6} z={0.22}>
           <rect className="inside-ring" x={0.05} y={0.05} width={5.9} height={1.9} rx={0.15} />
-          {Array.from({ length: 4 }, (_, r) => Array.from({ length: 12 }, (_, c) => (
-            <rect key={`${r}.${c}`} className={(r * 4 + c - 8) === m.key && c >= 8 ? 'glass hot' : 'detail'} x={0.25 + c * 0.47} y={0.22 + r * 0.42} width={0.36} height={0.32} rx={0.05} />
-          )))}
+          <g transform={`scale(${6 / KB_W} ${2 / KB_D})`}>
+            {KEYS.map(k => <rect key={k.code + k.x} className={held?.has(k.code) ? 'glass hot' : 'detail'} x={k.x} y={k.y} width={k.w} height={U - 0.2} rx={0.12}
+              style={held?.has(k.code) ? { fill: 'var(--glow-hi)' } : undefined} filter={held?.has(k.code) ? 'url(#soft-p)' : undefined} />)}
+          </g>
         </Top>
       </Opens>
       <Opens seg="case" label={open(n.case)} onOpen={onOpen}>
@@ -585,14 +613,14 @@ export function MonitorScene({ m, onOpen, n, open }: SceneProps) {
   );
 }
 
-/** Keyboard: click a hex key to type it into register B; the scan circuits are pulled out behind. */
-export function KeyboardScene({ m, onOpen, onKey, n, open }: SceneProps) {
+/** Keyboard: type on yours or click a key here; the keys 0–9 and A–F form the 16-key scan pad and reach register B. */
+export function KeyboardScene({ m, onOpen, onKey, held, n, open }: SceneProps) {
   return (
-    <Frame x0={0} y0={-5.2} x1={14} y1={5.8} zt={1} label={n.keyboard}>
-      <Box pr={pr} x={0.6} y={-5.2} z={0} w={12.4} d={3.8} h={0.2} r={0.15} cls="plate" />
+    <Frame x0={0} y0={-5.2} x1={KB_W} y1={KB_D + 0.2} zt={1} label={n.keyboard}>
+      <Box pr={pr} x={0.6} y={-5.2} z={0} w={KB_W - 1.2} d={3.8} h={0.2} r={0.15} cls="plate" />
       <Top x={0} y={0} z={0}><path className="trace on" d="M7,-1.4 V0" /></Top>
-      <Top x={0.6} y={-5.2} z={0.2}><path className="trace on" d="M4.9,1.9 H6.4" /></Top>
-      {([['cols', 1.4, n.cols], ['rows', 6.4, n.rows]] as const).map(([seg, x, name]) => (
+      <Top x={0.6} y={-5.2} z={0.2}><path className="trace on" d="M5.2,1.9 H6.8" /></Top>
+      {([['cols', 1.6, n.cols], ['rows', 7.4, n.rows]] as const).map(([seg, x, name]) => (
         <Opens key={seg} seg={seg} label={open(name)} onOpen={onOpen}>
           <g className="chip"><Box pr={pr} x={x} y={-4.6} z={0.2} w={3.4} d={2.6} h={0.35} r={0.08} /></g>
           <Top x={x} y={-4.6} z={0.55}>
@@ -602,19 +630,17 @@ export function KeyboardScene({ m, onOpen, onKey, n, open }: SceneProps) {
           </Top>
         </Opens>
       ))}
-      <Box pr={pr} x={0} y={0} z={0} w={14} d={5.6} h={0.5} r={0.3} />
-      {Array.from({ length: 4 }, (_, r) => Array.from({ length: 7 }, (_, c) => (
-        <Box key={`${r}.${c}`} pr={pr} x={0.4 + c * 1.15} y={0.4 + r * 1.25} z={0.5} w={0.95} d={1} h={0.25} r={0.1} />
-      )))}
-      {Array.from({ length: 16 }, (_, k) => {
-        const r = k >> 2, c = k & 3, x = 9 + c * 1.2, y = 0.4 + r * 1.25, on = k === m.key;
+      <Box pr={pr} x={0} y={0} z={0} w={KB_W} d={KB_D} h={0.5} r={0.3} />
+      {KEYS.map(k => {
+        const on = !!held?.has(k.code), hex = hexOf(k), inB = hex >= 0 && hex === m.key;
         return (
-          <g key={k} className="inside-bit" {...pressable(`${n.key} ${k.toString(16).toUpperCase()}`, () => onKey?.(k))}>
+          <g key={k.code + k.x} className="inside-bit" {...pressable(`${n.key} ${k.label || k.code}`, () => onKey?.(k.code, k.key))}>
             <g className={on ? 'lit' : ''} filter={on ? 'url(#soft)' : undefined}>
-              <Box pr={pr} x={x} y={y} z={0.5} w={1} d={1} h={on ? 0.12 : 0.3} r={0.1} />
+              <Box pr={pr} x={k.x} y={k.y} z={0.5} w={k.w} d={U - 0.14} h={on ? 0.1 : 0.3} r={0.1} />
             </g>
-            <Top x={x} y={y} z={on ? 0.62 : 0.8}>
-              <text className={`chip-txt ${on ? '' : 'on'}`} x={0.5} y={0.68} textAnchor="middle" style={{ fontSize: 0.5 }}>{k.toString(16).toUpperCase()}</text>
+            <Top x={k.x} y={k.y} z={on ? 0.6 : 0.8}>
+              {inB && !on && <rect className="inside-ring" x={0.08} y={0.08} width={k.w - 0.16} height={U - 0.3} rx={0.1} />}
+              <text className={`chip-txt ${on ? '' : hex >= 0 ? 'on' : ''}`} x={k.w / 2} y={0.62} textAnchor="middle" style={{ fontSize: k.label.length > 1 ? 0.3 : 0.44 }}>{k.label}</text>
             </Top>
           </g>
         );

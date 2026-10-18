@@ -14,7 +14,7 @@ export default async function LoginPage({ params }: PageProps<'/[lang]/login'>) 
   const { t } = await getDict(params);
   return (
     <div className="flex min-h-dvh flex-col overflow-y-auto" style={{ height: '100dvh' }}>
-      <SiteHeader title={t.nav.signIn} />
+      <SiteHeader />
       <main className="grid flex-1 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         {/* left half: the logic board, large; hidden on small screens so the form comes first */}
         <section className="relative hidden flex-col items-center justify-center border-r border-edge bg-panel px-6 py-10 lg:flex">

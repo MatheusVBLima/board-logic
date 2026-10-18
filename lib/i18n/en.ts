@@ -241,7 +241,6 @@ const en = {
   },
   inside: {
     path: 'Levels',
-    back: 'Back',
     level: 'Level',
     running: 'Running now',
     values: 'Values',
@@ -271,7 +270,7 @@ const en = {
     },
     levels: {
       monitor: { title: 'Monitor', body: 'The screen is a grid of pixels. The scan counter says which row is being drawn, the row decoder lights only that row and the video controller decides which pixels make up the character. The controller board is pulled out in front: click a chip. Type on your keyboard and the text shows on the bottom line.' },
-      keyboard: { title: 'Keyboard', body: 'Type on your own keyboard and the text shows on screen; the keys 0 to 9 and A to F also go through the circuit. Or click a hex key: it goes into register B and the CPU starts adding that number. Underneath, the keyboard scans the columns one at a time (a decoder) and encodes which row answered (an encoder), making the key code.' },
+      keyboard: { title: 'Keyboard', body: 'Type on your own keyboard and the text shows on screen; the keys 0 to 9 and A to F also go through the circuit. The key you press lights up here, and you can click the keys too. A hex digit goes into register B and the CPU starts adding that number. Underneath, the keyboard scans the columns one at a time (a decoder) and encodes which row answered (an encoder), making the key code.' },
       enc: { title: 'Encoder', body: 'The opposite of a decoder: of the four inputs, the one that is on becomes a 2-bit code. It is just two OR gates. It starts with the row of the key you typed.' },
       disp: { title: 'Video controller', body: 'Four bits go in and the character they stand for shows on the display. It is the same job the controller does for every character on the screen, picking which pixels light. It starts with the value of ACC.' },
       pc: { title: 'Computer', body: 'A tiny computer running one program: on every clock tick it adds B to the accumulator, stores the result in RAM and shows it on screen. Type on your keyboard to write on the screen. Click the case, the monitor or the keyboard to open it.' },
