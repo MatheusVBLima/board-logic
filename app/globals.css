@@ -280,3 +280,7 @@
 @keyframes inside-in { from { transform: scale(.55); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes inside-back-in { from { transform: scale(1.8); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .inside-zoom { transition: none; animation: none !important; } }
+.inside-blade { fill: var(--deck); stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.inside-spin { transform-box: fill-box; transform-origin: center; animation: inside-spin var(--spin, 1.4s) linear infinite; }
+@keyframes inside-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .inside-spin { animation: none; } }
